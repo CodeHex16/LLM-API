@@ -1,0 +1,60 @@
+name: Coverage Report
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  setup_and_test:
+    runs-on: ubuntu-latest
+
+    steps:
+    # Checkout LLM repository
+    - name: Checkout LLM repository
+      uses: actions/checkout@v3
+
+    # Clone Suppl-AI-Docker repository into the GitHub workspace
+    - name: Clone Suppl-AI-Docker repository
+      run: |
+        git clone https://github.com/CodeHex16/Suppl-AI-Docker.git $GITHUB_WORKSPACE/Suppl-AI-Docker
+        cd $GITHUB_WORKSPACE/Suppl-AI-Docker && git pull origin main && cd ..
+
+    # Ensure llm directory exists in Suppl-AI-Docker
+    - name: Ensure llm directory exists in Suppl-AI-Docker
+      run: |
+        mkdir -p $GITHUB_WORKSPACE/Suppl-AI-Docker/api/llm
+
+    # Move LLM-API directory to Suppl-AI-Docker/api/llm
+    - name: Move LLM directory to Suppl-AI-Docker
+      run: |
+        shopt -s extglob
+        mv !("Suppl-AI-Docker") $GITHUB_WORKSPACE/Suppl-AI-Docker/api/llm/
+    # Set up Docker Compose and services
+    - name: Set up Docker Compose and services
+      run: |
+        cd $GITHUB_WORKSPACE/Suppl-AI-Docker
+        docker compose -f 'docker-compose.yml' up -d 'postgresql'
+        docker compose -f 'docker-compose.yml' up -d 'llm-api'
+        docker ps # To ensure the containers are running
+
+        # Make sure the container is running
+
+        docker compose exec -T llm-api bash -c "pip install coverage pytest coveralls"
+
+        # Run tests and coverage
+        docker compose exec -T llm-api bash -c "coverage run -m pytest"
+        docker compose exec -T llm-api bash -c "coverage report"
+        docker compose exec -T llm-api bash -c "coverage html"
+
+        docker compose exec -T llm-api bash -c "apt-get update && apt-get install -y git"
+        
+        # Upload coverage to Coveralls
+        docker compose exec -e COVERALLS_GIT_BRANCH=${{ github.ref_name }} -e COVERALLS_GIT_COMMIT=${{ github.sha }} -T llm-api bash -c "COVERALLS_REPO_TOKEN=${{ secrets.COVERALLS_SUPPLAI_LLM_API_TOKEN }} coveralls"
+
+
+    # Clean up (shut down the Docker containers)
+    - name: Clean up
+      run: |
+        cd $GITHUB_WORKSPACE/Suppl-AI-Docker
+        docker compose down
