@@ -1,6 +1,12 @@
 # required packages
-flask_sqlalchemy
-flask
-pytest
-flask-testing
+fastapi
+uvicorn
 psycopg2
+pymilvus
+pymilvus[model]
+milvus-lite
+openai
+langchain
+langchain_community
+chromadb
+tiktoken
