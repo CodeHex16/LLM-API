@@ -1,0 +1,17 @@
+version: '3'
+
+services:
+  llm-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    volumes:
+      - ./api/fastapi:/app
+    environment:
+      - ENVIRONMENT=development
+    restart: unless-stopped
+    command: >
+      bash -c "pip install --no-cache-dir -r requirements.txt &&
+               python app.py"
