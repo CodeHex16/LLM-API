@@ -1,12 +1,14 @@
 # required packages
 fastapi
 uvicorn
-psycopg2
-pymilvus
-pymilvus[model]
-milvus-lite
+#psycopg2
+#pymilvus
+#pymilvus[model]
+#milvus-lite
 openai
 langchain
+langchain-openai
+langchain_chroma
 langchain_community
 chromadb
 tiktoken
