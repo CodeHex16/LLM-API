@@ -1,6 +1,7 @@
 # required packages
 fastapi
 uvicorn
+starlette
 #psycopg2
 #pymilvus
 #pymilvus[model]

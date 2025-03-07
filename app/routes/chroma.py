@@ -13,5 +13,4 @@ async def create_chat_response(domanda: schemas.Question):
 
     contesto = embedding(domanda.question)
     # print(contesto)
-    risposta = chat(domanda.question, contesto)
-    return {"answer": risposta}
+    return chat(domanda.question, contesto)

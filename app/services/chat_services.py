@@ -1,7 +1,9 @@
 import os
 from dotenv import load_dotenv
 from fastapi import HTTPException
+from starlette.responses import StreamingResponse
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -25,12 +27,40 @@ def chat(domanda, contesto):
                 {"role": "user", "content": f"Contesto: {contesto}"},
                 {"role": "user", "content": f"Domanda: {domanda}"},
             ],
+            stream=True,
         )
 
-        testo_risposta = risposta.choices[0].message.content
-        return testo_risposta
+        def async_generator():
+            for chunk in risposta:
+                logging.debug(f"Received chunk: {chunk}")
+
+                response_data = {
+                    "id": chunk.id,
+                    "object": chunk.object,
+                    "created": chunk.created,
+                    "model": chunk.model,
+                    "system_fingerprint": chunk.system_fingerprint,
+                    "choices": [
+                        {
+                            "index": chunk.choices[0].index,
+                            "delta": {
+                                "content": getattr(
+                                    chunk.choices[0].delta, "content", None
+                                )
+                            },
+                            "finish_reason": chunk.choices[0].finish_reason,
+                        }
+                    ],
+                }
+                yield f"data: {json.dumps(response_data)}\n\n"
+
+        return StreamingResponse(async_generator(), media_type="text/event-stream")
+
+        # testo_risposta = risposta.choices[0].message.content
+        # return testo_risposta
 
     except Exception as e:
+        logger.error(f"Errore nel servizio chat: {str(e)}", exc_info=True)
         raise HTTPException(
             status_code=500, detail=f"Errore nel servizio chat: {str(e)}"
         )
