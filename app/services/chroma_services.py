@@ -37,7 +37,37 @@ def vectorize_documents():
 
 
 def embedding(query):
-    #vectorize_documents()
+    # Verifica se ci sono documenti
+    if has_documents():
+        print(f"Il database contiene {count_documents()} documenti.")
+    else:
+        print("Il database è vuoto. Esecuzione della vettorizzazione...")
+        vectorize_documents()
     db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
     results = db.similarity_search(query, k=3)
     return results
+
+
+def has_documents():
+    """Verifica se il database Chroma contiene documenti."""
+    try:
+        db = Chroma(
+            persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
+        )
+        count = db._collection.count()
+        return count > 0
+    except Exception as e:
+        print(f"Errore nel verificare il database: {e}")
+        return False
+
+
+def count_documents():
+    """Restituisce il numero di documenti nel database Chroma."""
+    try:
+        db = Chroma(
+            persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
+        )
+        return db._collection.count()
+    except Exception as e:
+        print(f"Errore nel conteggio dei documenti: {e}")
+        return 0
