@@ -5,3 +5,6 @@ from datetime import datetime
 
 class Question(BaseModel):
 	question: str
+
+class Context(BaseModel):
+	context: str

@@ -14,7 +14,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
 def chat(domanda, contesto):
-    
+
     CHATBOT_INSTRUCTIONS = """
     Sei il chatbot di un'azienda alimentare.
 
@@ -43,8 +43,6 @@ def chat(domanda, contesto):
 
     """
 
-    logger.info(f"Richiesta di risposta alla domanda: {domanda}")
-    logger.info(f"Contesto fornito: {contesto}")
     try:
         risposta = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -85,9 +83,27 @@ def chat(domanda, contesto):
 
         return StreamingResponse(async_generator(), media_type="text/event-stream")
 
-        # testo_risposta = risposta.choices[0].message.content
-        # return testo_risposta
+    except Exception as e:
+        logger.error(f"Errore nel servizio chat: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=500, detail=f"Errore nel servizio chat: {str(e)}"
+        )
 
+
+def get_chat_name(context):
+    try:
+        risposta = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": "Genera un nome per la chat in base alle domande e risposte fornite, deve essere composto da massimo 40 caratteri, non deve contenere informazioni personali e deve essere professionale. Rispondi solo con il nome della chat. Evita di includere 'chatbot' o 'assistente'. Deve racchiudere gli argomenti trattati.",
+                },
+                {"role": "user", "content": f"Domande: {context}"},
+            ],
+        )
+
+        return risposta.choices[0].message.content
     except Exception as e:
         logger.error(f"Errore nel servizio chat: {str(e)}", exc_info=True)
         raise HTTPException(
