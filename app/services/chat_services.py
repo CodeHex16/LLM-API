@@ -16,7 +16,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 def chat(domanda, contesto):
 
     CHATBOT_INSTRUCTIONS = """
-    Sei il chatbot di un'azienda alimentare.
+    Sei il chatbot di un'azienda.
 
     Missione:
     Assistere gli utenti nell'esplorazione dei prodotti forniti dall'azienda, informarli sulle caratteristiche del prodotto e consigliarne l'acquisto.
@@ -40,7 +40,6 @@ def chat(domanda, contesto):
     - Utilizzare solo la base di conoscenze fornita.
     - Se una risposta non è disponibile, informare l'utente e suggerire di consultare l'assistenza clienti.
     - Non fornire informazioni personali.
-
     """
 
     try:
