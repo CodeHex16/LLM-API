@@ -7,8 +7,8 @@ class Message(BaseModel):
     content: str
 
 class Question(BaseModel):
-    question: str
-    messages: List[Message]
+	question: str
+	messages: List[Message] = []
 
 class Context(BaseModel):
 	context: str
