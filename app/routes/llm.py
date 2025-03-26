@@ -42,7 +42,7 @@ async def create_chat_response(
 @router.post("/chat_name")
 async def generate_chat_name(
     context: schemas.Context,
-    # chat_service=Depends(get_chat_service)
+    chat_service=Depends(get_chat_service)
 ):
     """ "
     Genera un nome per una chat.
@@ -53,40 +53,7 @@ async def generate_chat_name(
         raise HTTPException(status_code=400, detail="Nessun contesto fornito")
     print(context.context)
 
-    return ChatService(OpenAI("gpt-4o-mini")).get_chat_name(context.context)
-
-
-@router.get("/test")
-async def test():
-    try:
-        import os
-        import asyncio
-        from langchain_openai import OpenAI
-        from langchain.chat_models import init_chat_model
-
-        print("starting...")
-        llm = init_chat_model(
-            model="gpt-3.5-turbo", model_provider="openai"
-        )  # Modello più comune
-
-        # Utilizzo di asyncio.wait_for per aggiungere timeout
-        try:
-            # Eseguire l'operazione con un timeout di 10 secondi
-            abc = await asyncio.wait_for(
-                llm.ainvoke("Hello how are you?"), timeout=10.0
-            )
-            print(abc)
-            print("Done.")
-            return {"response": str(abc)}
-        except asyncio.TimeoutError:
-            return {"error": "Timeout durante la chiamata all'API OpenAI"}
-
-    except Exception as e:
-        import traceback
-
-        print(f"Errore: {str(e)}")
-        print(traceback.format_exc())
-        return {"error": str(e)}
+    return chat_service.get_chat_name(context.context).content
 
 
 @router.get("/ping")
@@ -94,47 +61,3 @@ async def ping():
     import requests
     ris = requests.get("https://www.google.com")
     return {"status": "ok", "message": ris.text}
-
-
-@router.get("/check_api")
-async def check_api():
-    """Verifica la configurazione dell'API OpenAI"""
-    import os
-
-    api_key = os.environ.get("OPENAI_API_KEY", "")
-
-    if not api_key:
-        return {"status": "error", "message": "OPENAI_API_KEY non impostata"}
-
-    # Mostra solo i primi 5 caratteri per sicurezza
-    masked_key = api_key[:5] + "..." if api_key else ""
-
-    return {
-        "status": "configured",
-        "api_key_preview": masked_key,
-        "length": len(api_key),
-    }
-
-
-@router.get("/test_direct")
-async def test_direct():
-    """Test diretto con la libreria OpenAI senza LangChain"""
-    try:
-        from openai import OpenAI
-        import os
-
-        client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
-
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",  # Modello standard
-            messages=[{"role": "user", "content": "Hello, how are you?"}],
-            max_tokens=50,
-        )
-
-        return {"response": response.choices[0].message.content}
-    except Exception as e:
-        import traceback
-
-        print(f"Errore diretto: {str(e)}")
-        print(traceback.format_exc())
-        return {"error": str(e)}
