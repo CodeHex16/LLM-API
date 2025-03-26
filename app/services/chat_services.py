@@ -71,7 +71,12 @@ class ChatService:
             HumanMessage(f"Domande: {contesto}"),
         ]
         try:
-            return self.LLM.model.invoke(messages)
+            print("self.LLM", self.LLM)
+            print("self.LLM.model", self.LLM.model)
+            
+            risp = self.LLM.model.invoke(messages)
+            print("risposta", risp)
+            return risp
         except Exception as e:
             logger.error(f"Error generating chat name: {str(e)}", exc_info=True)
             raise HTTPException(
