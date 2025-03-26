@@ -5,6 +5,7 @@ from starlette.responses import StreamingResponse
 import logging
 from langchain_core.messages import HumanMessage, SystemMessage
 from app.services.llm_services import LLM
+from app import schemas
 
 
 logger = logging.getLogger(__name__)
@@ -46,22 +47,44 @@ class ChatService:
         self.LLM = LLM_model
         self.chatbot_instructions = chatbot_instructions
 
-    def chat(self, domanda: str, contesto: str) -> StreamingResponse:
+    def chat(self, question: str, context: str, messages: str) -> StreamingResponse:
         messages = [
             SystemMessage(self.chatbot_instructions),
             SystemMessage(
-                f"Contesto: {contesto}"
+                f"Contesto: {context}"
             ),  # TODO: da capire se tenere system o human
-            HumanMessage(domanda),
+            SystemMessage(f"Conversazione precedente: {messages}"),
+            HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
         try:
-            stream_resp = self.LLM.model.stream(messages)
+            stream_response = self.LLM.model.stream(messages)
+
+            async def stream_adapter():
+                try:
+                    async for chunk in stream_response:
+                        if hasattr(chunk, "content"):
+                            content = chunk.content
+                        elif isinstance(chunk, dict) and "content" in chunk:
+                            content = chunk["content"]
+                        else:
+                            content = str(chunk)
+
+                        if content:
+                            yield f"data: {content}\n\n"
+
+                    # Segnala la fine dello stream
+                    yield "data: [DONE]\n\n"
+                except Exception as e:
+                    logger.error(f"Error in stream adapter: {str(e)}", exc_info=True)
+                    yield f"data: [ERROR] {str(e)}\n\n"
+
         except Exception as e:
             logger.error(f"Error in chat service streaming: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Error in chat service: {str(e)}"
             )
-        return StreamingResponse(stream_resp, media_type="text/event-stream")
+
+        return StreamingResponse(stream_adapter(), media_type="text/event-stream")
 
     def get_chat_name(self, contesto: str) -> str:
         messages = [
@@ -71,12 +94,7 @@ class ChatService:
             HumanMessage(f"Domande: {contesto}"),
         ]
         try:
-            print("self.LLM", self.LLM)
-            print("self.LLM.model", self.LLM.model)
-            
-            risp = self.LLM.model.invoke(messages)
-            print("risposta", risp)
-            return risp
+            return self.LLM.model.invoke(messages)
         except Exception as e:
             logger.error(f"Error generating chat name: {str(e)}", exc_info=True)
             raise HTTPException(

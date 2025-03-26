@@ -2,10 +2,6 @@
 fastapi
 uvicorn
 starlette
-#psycopg2
-#pymilvus
-#pymilvus[model]
-#milvus-lite
 openai
 langchain
 langchain-openai
