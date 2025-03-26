@@ -7,13 +7,20 @@ router = APIRouter()
 
 
 @router.post("/")
-async def create_chat_response(domanda: schemas.Question):
-    if not domanda.question:
+async def create_chat_response(question: schemas.Question):
+    if not question.question:
         raise HTTPException(status_code=400, detail="Nessuna domanda fornita")
 
-    contesto = embedding(domanda.question)
-    # print(contesto)
-    return chat(domanda.question, contesto)
+    if not question.messages:
+        raise HTTPException(status_code=400, detail="Nessun messaggio fornito")
+
+    #vengono passati solo gli ultimo 6 messaggi
+    last_messages = question.messages[-6:]
+
+    context = embedding(question.question)
+    messages_context = embedding(" | ".join([f"{msg.sender}: {msg.content}" for msg in last_messages]))
+
+    return chat(question.question, context, messages_context, last_messages)
 
 @router.post("/chat_name")
 async def generate_chat_name(context: schemas.Context):

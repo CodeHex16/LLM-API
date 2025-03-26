@@ -13,7 +13,7 @@ from openai import OpenAI
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 
-def chat(domanda, contesto):
+def chat(question, context, messages_context, messages):
 
     CHATBOT_INSTRUCTIONS = """
     Sei il chatbot di un'azienda.
@@ -43,21 +43,23 @@ def chat(domanda, contesto):
     """
 
     try:
-        risposta = client.chat.completions.create(
+        answer = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
                     "content": CHATBOT_INSTRUCTIONS,
                 },
-                {"role": "user", "content": f"Contesto: {contesto}"},
-                {"role": "user", "content": f"Domanda: {domanda}"},
+                {"role": "user", "content": f"Contesto: {context}"},
+                {"role": "user", "content": f"Messaggi precedenti: {messages}"},
+                {"role": "user", "content": f"Contesto dei messaggi precedenti: {messages_context}"},
+                {"role": "user", "content": f"Domanda: {question}"},
             ],
             stream=True,
         )
 
         def async_generator():
-            for chunk in risposta:
+            for chunk in answer:
                 logging.debug(f"Received chunk: {chunk}")
 
                 response_data = {
@@ -91,7 +93,7 @@ def chat(domanda, contesto):
 
 def get_chat_name(context):
     try:
-        risposta = client.chat.completions.create(
+        response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
@@ -102,7 +104,7 @@ def get_chat_name(context):
             ],
         )
 
-        return risposta.choices[0].message.content
+        return response.choices[0].message.content
     except Exception as e:
         logger.error(f"Errore nel servizio chat: {str(e)}", exc_info=True)
         raise HTTPException(

@@ -44,7 +44,7 @@ def embedding(query):
         print("Il database è vuoto. Esecuzione della vettorizzazione...")
         vectorize_documents()
     db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
-    results = db.similarity_search(query, k=3)
+    results = db.similarity_search(query, k=2)
     return results
 
 
