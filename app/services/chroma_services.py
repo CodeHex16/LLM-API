@@ -71,3 +71,23 @@ def count_documents():
     except Exception as e:
         print(f"Errore nel conteggio dei documenti: {e}")
         return 0
+
+
+# class VectorStoreRepository:
+# 	def __init__(self, embedding_provider: EmbeddingProvider):
+# 		self.embedding_provider = embedding_provider
+
+
+# class ChromaVectorStoreRepository:
+#     #TODO:
+
+# class EmbeddingProvider:
+#     def get_embedding_function(self):
+#         #TODO:
+
+# class OpenAIEmbeddingProvider(EmbeddingProvider):
+# 	def __init__(self):
+# 		self.embedding_function = OpenAIEmbeddings()
+
+# 	def get_embedding_function(self):
+# 		return self.embedding_function
