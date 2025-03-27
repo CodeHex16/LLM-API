@@ -11,12 +11,12 @@ router = APIRouter(
 
 def get_llm_model():
     """Factory function per creare un'istanza di LLM"""
-    return OpenAI("gpt-4o-mini")
+    return OpenAI("gpt-4o-mini") # Modifica qui per cambiare il modello LLM
 
 
 def get_chat_service(llm: LLM = Depends(get_llm_model)):
     """Ritorna un ChatService con il modello LLM appropriato"""
-    return ChatService(llm)
+    return ChatService(llm) 
 
 
 @router.post("/")
