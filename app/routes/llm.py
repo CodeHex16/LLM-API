@@ -1,7 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.services.chat_services import ChatService
-from app.services.llm_services import LLM, OpenAI
-from app.services.chroma_services import embedding
+from app.services.llm_response_service import ChatService
+from app.services.llm_service import LLM, OpenAI
+
+# from app.services.chroma_services import embedding
+from app.services.vector_database_service import get_vector_database_service
+from app.services.llm_response_service import LLMResponseService, get_llm_response_service
+
 import app.schemas as schemas
 
 router = APIRouter(
@@ -9,59 +13,33 @@ router = APIRouter(
 )
 
 
-def get_llm_model():
-    """Factory function per creare un'istanza di LLM"""
-    return OpenAI("gpt-4o-mini") # Modifica qui per cambiare il modello LLM
-
-
-def get_chat_service(llm: LLM = Depends(get_llm_model)):
-    """Ritorna un ChatService con il modello LLM appropriato"""
-    return ChatService(llm) 
-
-
 @router.post("/")
 async def create_chat_response(
-    question: schemas.Question, chat_service=Depends(get_chat_service)
+    question: schemas.Question, llm_response_service: LLMResponseService = Depends(get_llm_response_service)
 ):
     """
     Fornisce una risposta a una domanda utilizzando il contesto rilevante.
-    
+
     Args:
         question (schemas.Question): La domanda e lo storico dei messaggi.
         chat_service: Servizio di chat per generare risposte.
-        
+
     Returns:
         La risposta generata dal modello LLM.
-        
+
     Raises:
         HTTPException: Se non viene fornita una domanda valida.
     """
     if not question.question or question.question.strip() == "":
         raise HTTPException(status_code=400, detail="Nessuna domanda fornita")
     
-    # contesto dalla domanda corrente
-    context = embedding(question.question)
-    
-    # Se ci sono messaggi precedenti, considera gli ultimi 6 per cercare altro contesto
-    if question.messages:
-        last_messages = question.messages[-6:]
-
-        conversation_history = " ".join([
-            f"{msg.sender}: {msg.content}" 
-            for msg in last_messages
-            if msg.content.strip()
-        ])
-        
-        messages_context = embedding(conversation_history)
-
-        context = f"{context} {messages_context}" # Unire i contesti
-    
-    return chat_service.chat(question.question, context)
+    llm_response_service = get_llm_response_service()
+    return llm_response_service.generate_llm_response(question.question, question.messages)
 
 
 @router.post("/chat_name")
 async def generate_chat_name(
-    context: schemas.Context, chat_service=Depends(get_chat_service)
+    context: schemas.Context
 ):
     """ "
     Genera un nome per una chat.
@@ -71,7 +49,10 @@ async def generate_chat_name(
     if not context.context:
         raise HTTPException(status_code=400, detail="Nessun contesto fornito")
 
-    return chat_service.get_chat_name(context.context).content
+    llm_response_service = get_llm_response_service() 
+    return llm_response_service.generate_llm_chat_name(
+        context.context
+    )
 
 
 @router.get("/ping")

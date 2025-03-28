@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import logging
 from langchain.chat_models import init_chat_model
+from config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -54,3 +55,16 @@ class Ollama(LLM):
         except Exception as e:
             logger.error(f"Error initializing model {self.model_name}: {str(e)}")
             raise ValueError(f"Invalid or unavailable model: {self.model_name}") from e
+
+def get_llm_model():
+    """Factory function per creare un'istanza di LLM"""
+    provider = settings.LLM_PROVIDER.lower()
+    match provider:
+        case "openai":
+            return OpenAI(settings.LLM_MODEL_NAME)
+        case "ollama":
+            return Ollama(settings.LLM_MODEL_NAME)
+        # aggiungere altri provider qui
+        case _:
+            raise ValueError(f"Provider LLM '{provider}' non supportato.")  
+

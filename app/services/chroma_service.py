@@ -2,22 +2,17 @@ import os
 from langchain_chroma import Chroma
 from langchain.text_splitter import CharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
-from langchain_community.document_loaders import TextLoader
-
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-
-# Percorso dove salvare i dati di Chroma
-DOCUMENTS_FOLDER = "documenti"
-CHROMA_DB_PATH = "chroma_db"
+from langchain_community.document_loaders import TextLoader, PyPDFLoader
+from config import settings
 
 
 def vectorize_documents():
     embedding_function = OpenAIEmbeddings()
 
     documents = []
-    for filename in os.listdir(DOCUMENTS_FOLDER):
+    for filename in os.listdir(settings.settings.DOCUMENTS_FOLDER):
         if filename.endswith(".txt"):
-            file_path = os.path.join(DOCUMENTS_FOLDER, filename)
+            file_path = os.path.join(settings.DOCUMENTS_FOLDER, filename)
             loader = TextLoader(file_path, encoding="utf-8")
             docs = loader.load()
             documents.extend(docs)
@@ -30,7 +25,7 @@ def vectorize_documents():
     texts = text_splitter.split_documents(documents)
 
     db = Chroma.from_documents(
-        texts, embedding_function, persist_directory=CHROMA_DB_PATH
+        texts, embedding_function, persist_directory=settings.CHROMA_DB_PATH
     )
 
     print(f"✅ {len(texts)} documenti vettorializzati e salvati in Chroma.")
@@ -43,7 +38,7 @@ def embedding(query):
     else:
         print("Il database è vuoto. Esecuzione della vettorizzazione...")
         vectorize_documents()
-    db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
+    db = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
     results = db.similarity_search(query, k=2)
     return results
 
@@ -52,7 +47,7 @@ def has_documents():
     """Verifica se il database Chroma contiene documenti."""
     try:
         db = Chroma(
-            persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
+            persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
         )
         count = db._collection.count()
         return count > 0
@@ -65,7 +60,7 @@ def count_documents():
     """Restituisce il numero di documenti nel database Chroma."""
     try:
         db = Chroma(
-            persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
+            persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
         )
         return db._collection.count()
     except Exception as e:

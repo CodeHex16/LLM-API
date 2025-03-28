@@ -1,58 +1,60 @@
 import os
 from dotenv import load_dotenv
-from fastapi import HTTPException
+from fastapi import HTTPException, Depends
 from starlette.responses import StreamingResponse
 import logging
 from langchain_core.messages import HumanMessage, SystemMessage
-from app.services.llm_services import LLM
 from app import schemas
+from typing import List
 
+from config import settings
+
+
+from app.services.vector_database_service import VectorDatabase, get_vector_database
+from app.services.llm_service import LLM, get_llm_model
 
 logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-CHATBOT_INSTRUCTIONS = """
-Sei il chatbot di un'azienda.
 
-Missione:
-Assistere gli utenti nell'esplorazione dei prodotti forniti dall'azienda, informarli sulle caratteristiche del prodotto e consigliane l'acquisto.
-
-Tratti della personalità:
-- Conoscenza: Fornisce risposte accurate dalla base di conoscenze.
-- Amichevole: cordiale e disponibile.
-- Trasparente: condivide solo informazioni convalidate.
-
-Capacità:
-- Educare: Spiegare i prodotti presenti, consigliarne i possibili usi, la storia dell'azienda e i suoi valori utilizzando la base di conoscenze.
-- Assistere: Consigliare prodotti e fornire informazioni rigorosamente basate sui dati approvati.
-- Ispirare: evidenziare i vantaggi e gli usi di ogni prodotto.
-- Coinvolgere: Rispondere alle domande in modo chiaro ed educato, reindirizzando gli utenti al supporto se le risposte non sono disponibili.
-
-Tono:
-- Positivo, professionale e privo di gergo.
-- Rispettoso ed empatico per garantire un'esperienza di supporto.
-
-Regole comportamentali:
-- Utilizzare solo la base di conoscenze fornita.
-- Se una risposta non è disponibile, informare l'utente e suggerire di consultare l'assistenza clienti.
-- Non fornire informazioni personali.
-"""
-
-
-class ChatService:
+class LLMResponseService:
     def __init__(
-        self, LLM_model: LLM, chatbot_instructions: str = CHATBOT_INSTRUCTIONS
+        self,
+        LLM_model: LLM = Depends(get_llm_model),
+        vector_database: VectorDatabase = Depends(get_vector_database),
     ):
         self.LLM = LLM_model
-        self.chatbot_instructions = chatbot_instructions
+        self.vector_database = vector_database
+        self.CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
 
-    def chat(self, question: str, context: str, messages: str) -> StreamingResponse:
+    def _get_context(self, question: str) -> str:
+        """
+        Get the context for the question from the vector database.
+        """
+        try:
+            question_context = self.vector_database.search_context(question)
+            if not question_context:
+                raise ValueError("No context found for the question.")
+            return question_context
+        except Exception as e:
+            logger.error(f"Error getting context: {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Error getting context: {str(e)}"
+            )
+
+    def generate_llm_response(
+        self, question: str, chat_history: List[str] = None
+    ) -> StreamingResponse:
+        context = self._get_context(question)
+        # TODO: gestire array messaggi 
+        messages_context = self._get_context(chat_history)
+
         messages = [
-            SystemMessage(self.chatbot_instructions),
+            SystemMessage(self.CHATBOT_INSTRUCTIONS),
             SystemMessage(
-                f"Contesto: {context}"
-            ),  # TODO: da capire se tenere system o human
+                f"Contesto: {context}\n{messages_context}",
+            ),
             SystemMessage(f"Conversazione precedente: {messages}"),
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
@@ -86,13 +88,16 @@ class ChatService:
 
         return StreamingResponse(stream_adapter(), media_type="text/event-stream")
 
-    def get_chat_name(self, contesto: str) -> str:
+    def generate_llm_chat_name(self, chat_history: str) -> str:
+        messages_context = self._get_context(chat_history)
+
         messages = [
             SystemMessage(
                 "Genera un nome per la chat in base alle domande e risposte fornite, deve essere composto da massimo 40 caratteri, non deve contenere informazioni personali e deve essere professionale. Rispondi solo con il nome della chat. Evita di includere 'chatbot' o 'assistente'. Deve racchiudere gli argomenti trattati."
             ),
-            HumanMessage(f"Domande: {contesto}"),
+            HumanMessage(f"Domande: {chat_history}"),
         ]
+
         try:
             return self.LLM.model.invoke(messages)
         except Exception as e:
@@ -100,3 +105,7 @@ class ChatService:
             raise HTTPException(
                 status_code=500, detail=f"Error generating chat name: {str(e)}"
             )
+
+
+def get_llm_response_service() -> LLMResponseService:
+    return LLMResponseService()

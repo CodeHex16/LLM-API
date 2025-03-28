@@ -30,12 +30,15 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 				model=self.model_name
 			)
 		return self._embedding_function
-	
+
+
+
 def get_embedding_provider() -> EmbeddingProvider: 
 	"""Restituisce il provider di embedding in base alla configurazione."""
-	provider_type = settings.LLM_PROVIDER.lower()
-	if provider_type == "openai":
-		return OpenAIEmbeddingProvider()
-	# aggiungere altri provider qui
-	else:
-		raise ValueError(f"Provider di embedding '{provider_type}' non supportato.")
+	provider = settings.LLM_PROVIDER.lower()
+	match provider:
+		case "openai":
+			return OpenAIEmbeddingProvider()
+		# aggiungere altri provider qui
+		case _:
+			raise ValueError(f"Provider di embedding '{provider}' non supportato.")
