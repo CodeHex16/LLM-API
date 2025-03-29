@@ -11,9 +11,6 @@ services:
             - ./:/app
         env_file:
             - .env
-        environment:
-            - PYTHONDONTWRITEBYTECODE=1
-            - PYTHONUNBUFFERED=1
         command: >
-            bash -c "pip install --no-cache-dir -r requirements.txt &&
-                    fastapi run"
+            bash -c "echo check && cd app && pip install --no-cache-dir -r requirements.txt &&
+                    uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
