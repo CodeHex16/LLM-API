@@ -36,8 +36,9 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 def get_embedding_provider() -> EmbeddingProvider: 
 	"""Restituisce il provider di embedding in base alla configurazione."""
 	provider = settings.LLM_PROVIDER.lower()
-	if provider == "openai":
-		return OpenAIEmbeddingProvider()
-		# aggiungere altri provider qui
-	else:
-		raise ValueError(f"Provider di embedding '{provider}' non supportato.")
+	match provider:
+		case "openai":
+			return OpenAIEmbeddingProvider()
+			# aggiungere altri provider qui
+		case _:
+			raise ValueError(f"Provider di embedding '{provider}' non supportato.")
