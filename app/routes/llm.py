@@ -1,9 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException
-from app.services.llm_response_service import ChatService
 from app.services.llm_service import LLM, OpenAI
 
 # from app.services.chroma_services import embedding
-from app.services.vector_database_service import get_vector_database_service
+from app.services.vector_database_service import get_vector_database
 from app.services.llm_response_service import LLMResponseService, get_llm_response_service
 
 import app.schemas as schemas

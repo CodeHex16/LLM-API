@@ -10,8 +10,8 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from embeddings_service import EmbeddingProvider, get_embedding_provider
-from config import settings
+from app.services.embeddings_service import EmbeddingProvider, get_embedding_provider
+from app.config import settings
 
 
 class VectorDatabase(ABC):
@@ -155,7 +155,7 @@ class ChromaDB(VectorDatabase):
             logger.info(f"Vector store già inizializzato con {self.count()} documenti.")
 
 
-def get_vector_database_service(
+def get_vector_database(
     embedding_provider: EmbeddingProvider = Depends(
         get_embedding_provider
     ),  # Inietta il provider

@@ -7,7 +7,7 @@ from langchain_core.messages import HumanMessage, SystemMessage
 from app import schemas
 from typing import List
 
-from config import settings
+from app.config import settings
 
 
 from app.services.vector_database_service import VectorDatabase, get_vector_database

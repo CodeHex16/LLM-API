@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 import os
 import logging
 from langchain.chat_models import init_chat_model
-from config import settings
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -59,12 +59,10 @@ class Ollama(LLM):
 def get_llm_model():
     """Factory function per creare un'istanza di LLM"""
     provider = settings.LLM_PROVIDER.lower()
-    match provider:
-        case "openai":
-            return OpenAI(settings.LLM_MODEL_NAME)
-        case "ollama":
-            return Ollama(settings.LLM_MODEL_NAME)
-        # aggiungere altri provider qui
-        case _:
-            raise ValueError(f"Provider LLM '{provider}' non supportato.")  
-
+    if provider == "openai":
+        return OpenAI(settings.LLM_MODEL_NAME)
+    elif provider == "ollama":
+        return Ollama(settings.LLM_MODEL_NAME)
+    # aggiungere altri provider qui
+    else:
+        raise ValueError(f"Provider LLM '{provider}' non supportato.")
