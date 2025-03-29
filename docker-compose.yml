@@ -11,6 +11,12 @@ services:
             - ./:/app
         env_file:
             - .env
+        environment:
+            - PYTHONUNBUFFERED=1
+            - PYTHONDONTWRITEBYTECODE=1
         command: >
-            bash -c "cd app && pip install --no-cache-dir -r requirements.txt &&
-                    uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload"
+            bash -c "
+                cd app && 
+                pip install --no-cache-dir -r requirements.txt && 
+                uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+            "
