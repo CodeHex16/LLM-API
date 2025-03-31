@@ -13,27 +13,26 @@ router = APIRouter(
 
 
 @router.post("/")
-async def create_chat_response(
+async def generate_chat_response(
     question: schemas.Question, llm_response_service: LLMResponseService = Depends(get_llm_response_service)
 ):
     """
     Fornisce una risposta a una domanda utilizzando il contesto rilevante.
 
-    Args:
+    *Args*:
         question (schemas.Question): La domanda e lo storico dei messaggi.
         chat_service: Servizio di chat per generare risposte.
 
-    Returns:
+    *Returns*:
         La risposta generata dal modello LLM.
 
-    Raises:
+    *Raises*:
         HTTPException: Se non viene fornita una domanda valida.
     """
     if not question.question or question.question.strip() == "":
         raise HTTPException(status_code=400, detail="Nessuna domanda fornita")
-    
-    llm_response_service = get_llm_response_service()
-    return llm_response_service.generate_llm_response(question.question, question.messages)
+        
+    return llm_response_service.generate_llm_response(question)
 
 
 @router.post("/chat_name")
@@ -42,8 +41,13 @@ async def generate_chat_name(
 ):
     """ "
     Genera un nome per una chat.
-    :param context: Il contesto contenente i messaggi della chat.
-    :return: Il nome generato per la chat.
+
+    *Args*:
+        context (schemas.Context): Il contesto della chat.
+    *Returns*:
+        str: Il nome generato per la chat.
+    *Raises*:
+        HTTPException: Se non viene fornito un contesto valido.
     """
     if not context.context:
         raise HTTPException(status_code=400, detail="Nessun contesto fornito")

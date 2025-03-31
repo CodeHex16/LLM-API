@@ -5,6 +5,8 @@ from langchain_openai import OpenAIEmbeddings
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from config import settings
 
+# TODO: DA CANCELLARE
+
 
 def vectorize_documents():
     embedding_function = OpenAIEmbeddings()
@@ -25,64 +27,9 @@ def vectorize_documents():
     texts = text_splitter.split_documents(documents)
 
     db = Chroma.from_documents(
-        texts, embedding_function, persist_directory=settings.CHROMA_DB_PATH
+        texts,
+        embedding_function,
+        persist_directory=settings.VECTOR_DB_PERSIST_DIRECTORY,
     )
 
     print(f"✅ {len(texts)} documenti vettorializzati e salvati in Chroma.")
-
-
-def embedding(query):
-    # Verifica se ci sono documenti
-    if has_documents():
-        print(f"Il database contiene {count_documents()} documenti.")
-    else:
-        print("Il database è vuoto. Esecuzione della vettorizzazione...")
-        vectorize_documents()
-    db = Chroma(persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
-    results = db.similarity_search(query, k=2)
-    return results
-
-
-def has_documents():
-    """Verifica se il database Chroma contiene documenti."""
-    try:
-        db = Chroma(
-            persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
-        )
-        count = db._collection.count()
-        return count > 0
-    except Exception as e:
-        print(f"Errore nel verificare il database: {e}")
-        return False
-
-
-def count_documents():
-    """Restituisce il numero di documenti nel database Chroma."""
-    try:
-        db = Chroma(
-            persist_directory=settings.CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
-        )
-        return db._collection.count()
-    except Exception as e:
-        print(f"Errore nel conteggio dei documenti: {e}")
-        return 0
-
-
-# class VectorStoreRepository:
-# 	def __init__(self, embedding_provider: EmbeddingProvider):
-# 		self.embedding_provider = embedding_provider
-
-
-# class ChromaVectorStoreRepository:
-#     #TODO:
-
-# class EmbeddingProvider:
-#     def get_embedding_function(self):
-#         #TODO:
-
-# class OpenAIEmbeddingProvider(EmbeddingProvider):
-# 	def __init__(self):
-# 		self.embedding_function = OpenAIEmbeddings()
-
-# 	def get_embedding_function(self):
-# 		return self.embedding_function

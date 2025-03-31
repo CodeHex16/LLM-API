@@ -20,12 +20,10 @@ load_dotenv()
 
 class LLMResponseService:
     def __init__(
-        self,
-        LLM_model: LLM = Depends(get_llm_model),
-        vector_database: VectorDatabase = Depends(get_vector_database),
+        self
     ):
-        self.LLM = LLM_model
-        self.vector_database = vector_database
+        self.LLM = get_llm_model()
+        self.vector_database = get_vector_database()
         self.CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
 
     def _get_context(self, question: str) -> str:
@@ -33,6 +31,7 @@ class LLMResponseService:
         Get the context for the question from the vector database.
         """
         try:
+            print("self.vector_database",self.vector_database)
             question_context = self.vector_database.search_context(question)
             if not question_context:
                 raise ValueError("No context found for the question.")
@@ -43,17 +42,26 @@ class LLMResponseService:
                 status_code=500, detail=f"Error getting context: {str(e)}"
             )
 
-    def generate_llm_response(
-        self, question: str, chat_history: List[str] = None
-    ) -> StreamingResponse:
-        context = self._get_context(question)
-        # TODO: gestire array messaggi 
-        messages_context = self._get_context(chat_history)
+    def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
+
+        print(self._get_context)
+        context = self._get_context(question.question)
+        # TODO: gestire array messaggi
+        formatted_messages = ""
+        
+        if question.messages:
+            if isinstance(question.messages, list):
+                formatted_messages = "\n".join(
+                    [f"{msg['role']}: {msg['content']}" for msg in question.messages]
+                )
+            else:
+                formatted_messages = question.messages
+            context_messages = self._get_context(formatted_messages)
 
         messages = [
             SystemMessage(self.CHATBOT_INSTRUCTIONS),
             SystemMessage(
-                f"Contesto: {context}\n{messages_context}",
+                f"Contesto: {context}\n{context_messages}",
             ),
             SystemMessage(f"Conversazione precedente: {messages}"),
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),

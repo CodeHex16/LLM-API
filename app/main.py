@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from app.routes import llm
+from app.routes import documents
 
 app = FastAPI(
     title="LLM API",
@@ -8,3 +9,4 @@ app = FastAPI(
 )
 
 app.include_router(llm.router)
+app.include_router(documents.router)

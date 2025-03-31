@@ -9,3 +9,4 @@ langchain_chroma
 langchain_community
 chromadb
 pypdf
+python-multipart

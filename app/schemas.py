@@ -1,6 +1,7 @@
 from pydantic import BaseModel
 from typing import List
 from datetime import datetime
+from uuid import UUID
 
 class Message(BaseModel):
     sender: str
@@ -12,3 +13,9 @@ class Question(BaseModel):
 
 class Context(BaseModel):
 	context: str
+
+class Document(BaseModel):
+	id: UUID
+	title: str
+	updated_at: datetime
+	content: str

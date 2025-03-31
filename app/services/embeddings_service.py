@@ -31,8 +31,6 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 			)
 		return self._embedding_function
 
-
-
 def get_embedding_provider() -> EmbeddingProvider: 
 	"""Restituisce il provider di embedding in base alla configurazione."""
 	provider = settings.LLM_PROVIDER.lower()

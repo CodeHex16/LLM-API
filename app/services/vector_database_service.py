@@ -48,7 +48,7 @@ class ChromaDB(VectorDatabase):
     def __init__(
         self,
         embedding_provider: EmbeddingProvider,
-        persist_directory: str = settings.CHROMA_DB_PATH,
+        persist_directory: str = settings.VECTOR_DB_PERSIST_DIRECTORY,
     ):
         self.embedding_provider = embedding_provider
         # TODO: verificare come salva i file, se all'interno del container o in locale, e poi vedere il modo ideale per gestirli
@@ -66,29 +66,7 @@ class ChromaDB(VectorDatabase):
 
     # TODO: da spostare nel contextManager
     # def _load_and_split_docs(self, folder_path: str) -> List[Document]:
-    #     """Helper privato per caricare e splittare i documenti."""
-    #     documents = []
-    #     if not os.path.isdir(folder_path):
-    #         logger.warning(f"Directory documenti non trovata: {folder_path}")
-    #         return []
-    #     for filename in os.listdir(folder_path):
-    #         if filename.endswith(".txt"):
-    #             file_path = os.path.join(folder_path, filename)
-    #             try:
-    #                 loader = TextLoader(file_path, encoding="utf-8")
-    #                 docs = loader.load()
-    #                 documents.extend(docs)
-    #             except Exception as e:
-    #                 logger.error(f"Errore caricamento file {file_path}: {e}")
-
-    #     if not documents:
-    #         logger.warning("Nessun documento .txt valido trovato per la vettorizzazione.")
-    #         return []
-
-    #     text_splitter = CharacterTextSplitter(chunk_size=400, chunk_overlap=100)
-    #     texts = text_splitter.split_documents(documents)
-    #     logger.info(f"Caricati e splittati {len(texts)} chunk di documenti da {folder_path}")
-    #     return texts
+    
 
     def add_documents(self, documents_chunck: List[Document]):
         if not documents_chunck:
@@ -108,6 +86,8 @@ class ChromaDB(VectorDatabase):
             raise
 
     def search_context(self, query: str, results_number: int = 2) -> List[Document]:
+        # TODO: Non è detto che serva: Verifica se ci sono documenti
+        # ensure_vectorized()
         try:
             results = self._db.similarity_search(query, k=results_number)
             return results
@@ -160,9 +140,12 @@ def get_vector_database(
         get_embedding_provider
     ),  # Inietta il provider
 ) -> VectorDatabase:
-    repo = ChromaDB(
-        embedding_provider=embedding_provider, persist_directory=settings.CHROMA_DB_PATH
-    )
-    # Esegui il controllo vettorizzazione
-    repo.ensure_vectorized(settings.DOCUMENTS_FOLDER)
-    return repo
+    match settings.VECTOR_DB_PROVIDER.lower():
+        case "chroma":
+            vdb = ChromaDB(embedding_provider, persist_directory=settings.VECTOR_DB_PERSIST_DIRECTORY)
+            vdb.ensure_vectorized(settings.DOCUMENTS_FOLDER)
+            return vdb
+        case _:
+            raise ValueError(
+                f"Provider di database vettoriale '{settings.VECTOR_DB_PROVIDER}' non supportato."
+            )
