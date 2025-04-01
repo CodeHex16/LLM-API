@@ -7,6 +7,7 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from fastapi import Depends
 import os
 import logging
+import uuid
 
 logger = logging.getLogger(__name__)
 
@@ -34,11 +35,11 @@ class VectorDatabase(ABC):
     def count(self) -> int:
         pass
 
-    @abstractmethod
-    def ensure_vectorized(self, documents_folder: str):
-        """Metodo per caricare e vettorializzare se vuoto."""
-        # TODO: capire se lasciare in produzione
-        pass
+    # @abstractmethod
+    # def ensure_vectorized(self, documents_folder: str):
+    #     """Metodo per caricare e vettorializzare se vuoto."""
+    #     # TODO: capire se lasciare in produzione
+    #     pass
 
 
 # TODO: cistemare con i document loaders specifici
@@ -47,18 +48,20 @@ class ChromaDB(VectorDatabase):
 
     def __init__(
         self,
-        embedding_provider: EmbeddingProvider,
         persist_directory: str = settings.VECTOR_DB_PERSIST_DIRECTORY,
     ):
-        self.embedding_provider = embedding_provider
-        # TODO: verificare come salva i file, se all'interno del container o in locale, e poi vedere il modo ideale per gestirli
+        self.embedding_provider = get_embedding_provider()
         self.persist_directory = persist_directory
         self._db = None
 
     # Singleton
     def _get_db(self):
         if self._db is None:
+
+            print(f"ChromaDB: Inizializzazione del database in {self.persist_directory}")
+
             self._db = Chroma(
+                collection_name="supplai_documents",
                 persist_directory=self.persist_directory,
                 embedding_function=self.embedding_provider.get_embedding_function(),
             )
@@ -66,19 +69,49 @@ class ChromaDB(VectorDatabase):
 
     # TODO: da spostare nel contextManager
     # def _load_and_split_docs(self, folder_path: str) -> List[Document]:
-    
+
+    # def _is_document_duplicate(self, document: Document) -> bool:
+    #     """Controlla se il documento è duplicato."""
+    #     doc_uuid = uuid.uuid3(
+    #         uuid.NAMESPACE_DNS, document.page_content
+    #     )
+    #     print("doc uuid:", doc_uuid)
+    #     if doc_uuid in self._get_db().get()["ids"]:
+    #         print("Documento duplicato trovato.")
+    #         logger.warning("Documento duplicato trovato.")
+    #         return True 
+    #     pass
+
+    # def _filter_duplicates(self, documents: List[Document]) -> List[Document]:
+    #     """Controlla i documenti duplicati e li rimuove."""
+    #     filtered_documents = []
+    #     for doc in documents:
+    #         if not self._is_document_duplicate(doc):
+    #             filtered_documents.append(doc)
+    #     return filtered_documents
+
+    def _generate_document_ids(self, documents: List[Document]) -> List[str]:
+        """Estrae gli ID dei documenti."""
+        return [str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents]
 
     def add_documents(self, documents_chunck: List[Document]):
         if not documents_chunck:
             logger.warning("Nessun documento fornito per l'aggiunta.")
             return
         try:
-            self._db = Chroma.from_documents(
+            db = self._get_db()
+            
+            db.add_documents(
                 documents=documents_chunck,
-                embedding=self.embedding_function,
-                persist_directory=self.persist_directory,
+                ids=self._generate_document_ids(documents_chunck),
             )
+
+            print(
+                f"ChromaDB: Aggiunti {len(documents_chunck)} documenti al vector store."
+            )
+            print("ChromaDB: numero di documenti presenti",self.count())
             logger.info(f"Aggiunti {len(documents_chunck)} documenti al vector store.")
+
         except Exception as e:
             logger.error(
                 f"Errore durante l'aggiunta di documenti a Chroma: {e}", exc_info=True
@@ -89,7 +122,8 @@ class ChromaDB(VectorDatabase):
         # TODO: Non è detto che serva: Verifica se ci sono documenti
         # ensure_vectorized()
         try:
-            results = self._db.similarity_search(query, k=results_number)
+            db = self._get_db()
+            results = db.similarity_search(query, k=results_number)
             return results
         except Exception as e:
             logger.error(f"Errore durante la similarity search: {e}", exc_info=True)
@@ -115,35 +149,34 @@ class ChromaDB(VectorDatabase):
     def count(self) -> int:
         return self._get_collection_count()
 
-    def ensure_vectorized(self, documents_folder: str):
-        """Controlla se il DB è vuoto e, in caso, carica e vettorializza."""
-        if self.is_empty():
-            logger.info(
-                f"Vector store in {self.persist_directory} è vuoto. Avvio vettorizzazione da {documents_folder}..."
-            )
+    def _delete(self):
+        return self._get_db().delete_collection()
 
-            # TODO: delegare al context manager
-            texts_to_add = self._load_and_split_docs(documents_folder)
-            if texts_to_add:
-                self.add_documents(texts_to_add)
-                logger.info(
-                    f"Vettorizzazione completata. {self.count()} documenti nel DB."
-                )
-            else:
-                logger.warning("Nessun documento da vettorializzare trovato.")
-        else:
-            logger.info(f"Vector store già inizializzato con {self.count()} documenti.")
+    # def ensure_vectorized(self, documents_folder: str):
+    #     """Controlla se il DB è vuoto e, in caso, carica e vettorializza."""
+    #     if self.is_empty():
+    #         logger.info(
+    #             f"Vector store in {self.persist_directory} è vuoto. Avvio vettorizzazione da {documents_folder}..."
+    #         )
+
+    #         # TODO: delegare al context manager
+    #         texts_to_add = self._load_and_split_docs(documents_folder)
+    #         if texts_to_add:
+    #             self.add_documents(texts_to_add)
+    #             logger.info(
+    #                 f"Vettorizzazione completata. {self.count()} documenti nel DB."
+    #             )
+    #         else:
+    #             logger.warning("Nessun documento da vettorializzare trovato.")
+    #     else:
+    #         logger.info(f"Vector store già inizializzato con {self.count()} documenti.")
 
 
-def get_vector_database(
-    embedding_provider: EmbeddingProvider = Depends(
-        get_embedding_provider
-    ),  # Inietta il provider
-) -> VectorDatabase:
+def get_vector_database() -> VectorDatabase:
     match settings.VECTOR_DB_PROVIDER.lower():
         case "chroma":
-            vdb = ChromaDB(embedding_provider, persist_directory=settings.VECTOR_DB_PERSIST_DIRECTORY)
-            vdb.ensure_vectorized(settings.DOCUMENTS_FOLDER)
+            vdb = ChromaDB(persist_directory=settings.VECTOR_DB_PERSIST_DIRECTORY)
+            # vdb.ensure_vectorized(settings.DOCUMENTS_FOLDER)
             return vdb
         case _:
             raise ValueError(
