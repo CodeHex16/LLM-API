@@ -10,3 +10,9 @@ services:
         restart: always
         env_file:
             - .env
+        networks:
+            - suppl-ai-shared-network
+
+networks:
+    suppl-ai-shared-network:
+        external: true
