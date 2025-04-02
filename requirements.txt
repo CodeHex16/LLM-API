@@ -8,4 +8,5 @@ langchain-openai
 langchain_chroma
 langchain_community
 chromadb
-tiktoken
+pypdf
+python-multipart

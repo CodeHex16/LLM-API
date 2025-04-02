@@ -77,3 +77,4 @@ celerybeat.pid
 
 chroma_db/
 chroma_db/*
+documenti/*
