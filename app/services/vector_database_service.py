@@ -58,8 +58,7 @@ class ChromaDB(VectorDatabase):
     def _get_db(self):
         if self._db is None:
 
-            print(f"ChromaDB: Inizializzazione del database in {self.persist_directory}")
-
+            logger.info(f"ChromaDB: Inizializzazione del database in {self.persist_directory}")
             self._db = Chroma(
                 collection_name="supplai_documents",
                 persist_directory=self.persist_directory,
