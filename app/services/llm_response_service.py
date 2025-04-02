@@ -31,7 +31,6 @@ class LLMResponseService:
         Get the context for the question from the vector database.
         """
         try:
-            print("self.vector_database",self.vector_database)
             question_context = self.vector_database.search_context(question)
             if not question_context:
                 raise ValueError("No context found for the question.")
