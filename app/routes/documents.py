@@ -17,6 +17,17 @@ router = APIRouter(
 
 @router.post("/upload_file")
 async def upload_file(file: UploadFile):
+    """
+    Carica il file nel database vettoriale
+    
+    Args:
+        file (UploadFile): Il file da caricare. Deve essere un file di testo o PDF.
+
+    Raises:
+        HTTPException: Se il file non è valido o se si verifica un errore durante il caricamento.
+        HTTPException: Se il file esiste già nel database vettoriale.
+        HTTPException: Se si verifica un errore durante il caricamento e l'elaborazione del file.
+    """
     if not file:
         raise HTTPException(status_code=400, detail="No file uploaded")
     if not file.filename:
@@ -37,11 +48,23 @@ async def upload_file(file: UploadFile):
         )
 
     try:
-        #manda il file ad una funzione
+        # manda il file ad una funzione
         file_manager = get_file_manager(file)
         await file_manager.add_document(file)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Errore nel caricare e processare file: {e}")
+    except HTTPException as e:
+        match e.status_code:
+            case 400:
+                print("error detail:", e.detail)
+                raise HTTPException(
+                    status_code=400,
+                    detail="Document already exists",
+                )
+            case 500:
+                print("error detail:", e.detail)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error in uploading and processing file",
+                )
 
     return {"message": "File uploaded successfully"}
 
