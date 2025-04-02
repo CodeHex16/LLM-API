@@ -42,9 +42,7 @@ class LLMResponseService:
                 status_code=500, detail=f"Error getting context: {str(e)}"
             )
 
-    def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
-        logger.debug(f"self._get_context: {self._get_context}")        
-        
+    def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:        
         context = self._get_context(question.question)
         # TODO: gestire array messaggi
         formatted_messages = ""
