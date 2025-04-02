@@ -94,23 +94,23 @@ class ChromaDB(VectorDatabase):
         """Estrae gli ID dei documenti."""
         return [str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents]
 
-    def add_documents(self, documents_chunck: List[Document]):
-        if not documents_chunck:
+    def add_documents(self, documents_chunk: List[Document]):
+        if not documents_chunk:
             logger.warning("Nessun documento fornito per l'aggiunta.")
             return
         try:
             db = self._get_db()
             
             db.add_documents(
-                documents=documents_chunck,
-                ids=self._generate_document_ids(documents_chunck),
+                documents=documents_chunk,
+                ids=self._generate_document_ids(documents_chunk),
             )
 
             print(
-                f"ChromaDB: Aggiunti {len(documents_chunck)} documenti al vector store."
+                f"ChromaDB: Aggiunti {len(documents_chunk)} documenti al vector store."
             )
             print("ChromaDB: numero di documenti presenti",self.count())
-            logger.info(f"Aggiunti {len(documents_chunck)} documenti al vector store.")
+            logger.info(f"Aggiunti {len(documents_chunk)} documenti al vector store.")
 
         except Exception as e:
             logger.error(

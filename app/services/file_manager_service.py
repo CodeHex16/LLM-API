@@ -59,7 +59,7 @@ class FileManager(ABC):
         return file_path
 
     @abstractmethod
-    def _load_split_file(self, file: File, file_path: str):
+    def _load_split_file(self, file_path: str):
         """
         Carica il file e lo divide in chunk.
         
