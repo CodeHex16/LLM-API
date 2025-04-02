@@ -43,8 +43,8 @@ class LLMResponseService:
             )
 
     def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
-
-        print(self._get_context)
+        logger.debug(f"self._get_context: {self._get_context}")        
+        
         context = self._get_context(question.question)
         # TODO: gestire array messaggi
         formatted_messages = ""

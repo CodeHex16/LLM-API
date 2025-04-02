@@ -47,6 +47,9 @@ class OpenAI(LLM):
 
 
 class Ollama(LLM):
+    def _check_environment(self):
+        pass
+
     def _initialize_model(self):
         try:
             self.model = init_chat_model(model=self.model_name, model_provider="ollama")
