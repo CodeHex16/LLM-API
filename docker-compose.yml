@@ -13,6 +13,8 @@ services:
             - documents:/data/documents
         env_file:
             - .env
+        networks:
+            - suppl-ai-shared-network
         environment:
             - PYTHONUNBUFFERED=1
             - PYTHONDONTWRITEBYTECODE=1
@@ -24,9 +26,12 @@ services:
                 pip install --no-cache-dir -r requirements.txt && 
                 uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
             "
-
 volumes:
     chroma_db:
         driver: local
     documents:
         driver: local
+
+networks:
+    suppl-ai-shared-network:
+        external: true
