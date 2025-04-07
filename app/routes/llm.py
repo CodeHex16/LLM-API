@@ -3,7 +3,10 @@ from app.services.llm_service import LLM, OpenAI
 
 # from app.services.chroma_services import embedding
 from app.services.vector_database_service import get_vector_database
-from app.services.llm_response_service import LLMResponseService, get_llm_response_service
+from app.services.llm_response_service import (
+    LLMResponseService,
+    get_llm_response_service,
+)
 
 import app.schemas as schemas
 
@@ -14,7 +17,8 @@ router = APIRouter(
 
 @router.post("/")
 async def generate_chat_response(
-    question: schemas.Question, llm_response_service: LLMResponseService = Depends(get_llm_response_service)
+    question: schemas.Question,
+    llm_response_service: LLMResponseService = Depends(get_llm_response_service),
 ):
     """
     Fornisce una risposta a una domanda utilizzando il contesto rilevante.
@@ -31,15 +35,16 @@ async def generate_chat_response(
     """
     if not question.question or question.question.strip() == "":
         raise HTTPException(status_code=400, detail="Nessuna domanda fornita")
-        
+
     return llm_response_service.generate_llm_response(question)
 
 
 @router.post("/chat_name")
 async def generate_chat_name(
-    context: schemas.Context
+    context: schemas.Context,
+    llm_response_service: LLMResponseService = Depends(get_llm_response_service),
 ):
-    """ "
+    """
     Genera un nome per una chat.
 
     *Args*:
@@ -52,10 +57,7 @@ async def generate_chat_name(
     if not context.context:
         raise HTTPException(status_code=400, detail="Nessun contesto fornito")
 
-    llm_response_service = get_llm_response_service() 
-    return llm_response_service.generate_llm_chat_name(
-        context.context
-    )
+    return llm_response_service.generate_llm_chat_name(context.context)
 
 
 @router.get("/ping")
