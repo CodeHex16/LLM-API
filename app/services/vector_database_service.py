@@ -94,6 +94,7 @@ class ChromaDB(VectorDatabase):
         return [str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents]
 
     def add_documents(self, documents_chunk: List[Document]):
+        print("document_chunks",documents_chunk)
         if not documents_chunk:
             logger.warning("Nessun documento fornito per l'aggiunta.")
             return
@@ -115,6 +116,16 @@ class ChromaDB(VectorDatabase):
             logger.error(
                 f"Errore durante l'aggiunta di documenti a Chroma: {e}", exc_info=True
             )
+            raise
+
+    def delete_document(self, document_path: str):
+        """Elimina un documento dal database."""
+        try:
+            db = self._get_db()
+            db.delete(where={"source": document_path})
+            logger.info(f"Documento con PATH {document_path} eliminato.")
+        except Exception as e:
+            logger.error(f"Errore durante l'eliminazione del documento: {e}", exc_info=True)
             raise
 
     def search_context(self, query: str, results_number: int = 2) -> List[Document]:
