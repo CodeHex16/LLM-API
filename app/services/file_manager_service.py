@@ -6,6 +6,7 @@ from fastapi import HTTPException
 import os
 import logging
 import json
+import requests
 from datetime import datetime
 
 from app.services.vector_database_service import get_vector_database, VectorDatabase
@@ -24,7 +25,7 @@ class FileManager(ABC):
     def _get_full_path(self, filename: str) -> str:
         """
         Restituisce il percorso completo del file.
-        
+
         Param:
         - filename: str - Il nome del file.
 
@@ -37,7 +38,7 @@ class FileManager(ABC):
     async def _save_file(self, file: File):
         """
         Salva il file nel filesystem.
-        
+
         Param:
         - file: File - Il file da salvare.
 
@@ -62,7 +63,7 @@ class FileManager(ABC):
     def _load_split_file(self, file_path: str):
         """
         Carica il file e lo divide in chunk.
-        
+
         Param:
         - file: File - Il file da caricare.
         - file_path: str - Il percorso completo del file salvato.
@@ -71,16 +72,16 @@ class FileManager(ABC):
         - list: Una lista di chunk.
         """
 
-    async def add_document(self, file: File):
+    async def add_document(self, file: File, token: str):
         """
-        Salva il file nel filesystem, 
+        Salva il file nel filesystem,
         lo carica e lo divide in chunk,
         lo salva nel database vettoriale,
         e invia una richiesta al database API per caricarne il riferimento.
 
         Param:
         - file: File - Il file da caricare.
-                
+
         Returns:
         - bool: True se il file è stato caricato correttamente, False altrimenti.
 
@@ -93,8 +94,6 @@ class FileManager(ABC):
 
         self.vector_database.add_documents(chunks)
 
-        import requests
-
         request_body = {
             "file_path": file_path,
             "title": file.filename.split(".")[0],
@@ -102,7 +101,12 @@ class FileManager(ABC):
             "uploaded_at": datetime.now().isoformat(),
         }
         upload_request_response = requests.post(
-            "http://database-api:8000/documents/upload/", data=json.dumps(request_body)
+            "http://database-api:8000/documents/upload",
+            data=json.dumps(request_body),
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
         )
         print("upload_request_response:", upload_request_response.json())
         match upload_request_response.status_code:
@@ -113,6 +117,59 @@ class FileManager(ABC):
                 raise HTTPException(
                     status_code=400,
                     detail=f"Documento già esistente",
+                )
+            case 500:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file",
+                )
+        return False
+
+    async def delete_document(self, file_path: str, token: str):
+        """
+        Elimina il file dal filesystem e dal database vettoriale e dal database.
+
+        Param:
+        - file_path: str - Il percorso completo del file da eliminare.
+
+        Returns:
+        - bool: True se il file è stato eliminato correttamente, False altrimenti.
+        """
+        # rimuovi da filesystem
+        if os.path.isfile(file_path) and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"File {file_path} non trovato: {e}",
+                )
+            logger.info(f"File {file_path} eliminato")
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"File {file_path} non trovato",
+            )
+        
+        # rimuovi da database vettoriale
+        self.vector_database.delete_document(file_path)
+
+        # rimuovi da Database API
+        delete_req = requests.delete(
+            f"http://database-api:8000/documents/delete?file_path={file_path}",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+        )
+        print("delete_req:", delete_req.json())
+        match delete_req.status_code:
+            case 200:
+                print(f"Documento eliminato correttamente")
+            case 400:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Documento non trovato",
                 )
             case 500:
                 raise HTTPException(
@@ -143,18 +200,38 @@ class StringManager(FileManager):
 
 def get_file_manager(file: File):
     """
-    Restituisce il gestore del file in base al tipo di file.
+    Restituisce il file manager in base al tipo di file.
 
     Param:
     - file: File - Il file da gestire.
 
     Returns:
-    - FileManager: Il gestore del file appropriato.
+    - FileManager: Il file manager appropriato.
     """
     match file.content_type:
         case "text/plain":
             return TextFileManager()
         case "application/pdf":
+            return PdfFileManager()
+        case _:
+            raise ValueError("Unsupported file type")
+
+
+def get_file_manager_by_extension(file_path: str):
+    """
+    Restituisce il file manager in base all'estensione del file.
+
+    Param:
+    - file_path: str - Il percorso del file da gestire.
+
+    Returns:
+    - FileManager: Il file manager appropriato.
+    """
+    _, ext = os.path.splitext(file_path)
+    match ext:
+        case ".txt":
+            return TextFileManager()
+        case ".pdf":
             return PdfFileManager()
         case _:
             raise ValueError("Unsupported file type")
