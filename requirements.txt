@@ -8,5 +8,6 @@ langchain-openai
 langchain_chroma
 langchain_community
 chromadb
+pytest
 pypdf
 python-multipart
