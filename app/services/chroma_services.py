@@ -11,6 +11,21 @@ DOCUMENTS_FOLDER = "documenti"
 CHROMA_DB_PATH = "chroma_db"
 
 
+def set_documents_folder(dir: str):
+    """Imposta la cartella dei documenti."""
+    global DOCUMENTS_FOLDER
+    DOCUMENTS_FOLDER = dir
+    if not os.path.exists(DOCUMENTS_FOLDER):
+        os.makedirs(DOCUMENTS_FOLDER, exist_ok=True)
+
+def set_chroma_db_path(path: str):
+    """Imposta il percorso del database Chroma."""
+    global CHROMA_DB_PATH
+    CHROMA_DB_PATH = path
+    if not os.path.exists(CHROMA_DB_PATH):
+        os.makedirs(CHROMA_DB_PATH, exist_ok=True)
+
+
 def vectorize_documents():
     embedding_function = OpenAIEmbeddings()
 
@@ -32,7 +47,7 @@ def vectorize_documents():
     db = Chroma.from_documents(
         texts, embedding_function, persist_directory=CHROMA_DB_PATH
     )
-
+    db = None  # Chiude la connessione al database
     print(f"✅ {len(texts)} documenti vettorializzati e salvati in Chroma.")
 
 
@@ -45,6 +60,7 @@ def embedding(query):
         vectorize_documents()
     db = Chroma(persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings())
     results = db.similarity_search(query, k=3)
+    db = None  # Chiude la connessione al database
     return results
 
 
@@ -55,6 +71,7 @@ def has_documents():
             persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
         )
         count = db._collection.count()
+        db = None  # Chiude la connessione al database
         return count > 0
     except Exception as e:
         print(f"Errore nel verificare il database: {e}")
@@ -67,7 +84,9 @@ def count_documents():
         db = Chroma(
             persist_directory=CHROMA_DB_PATH, embedding_function=OpenAIEmbeddings()
         )
-        return db._collection.count()
+        count = db._collection.count()
+        db = None  # Chiude la connessione al database
+        return count
     except Exception as e:
         print(f"Errore nel conteggio dei documenti: {e}")
         return 0
