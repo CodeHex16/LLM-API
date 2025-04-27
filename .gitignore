@@ -74,7 +74,7 @@ migrations/
 celerybeat-schedule
 celerybeat.pid
 
-# Custom ignore (add your specific paths here)
-# /example_folder/
 
-/chroma_db/*
+chroma_db/
+chroma_db/*
+documenti/*
