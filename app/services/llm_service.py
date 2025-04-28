@@ -59,7 +59,7 @@ class Ollama(LLM):
             logger.error(f"Error initializing model {self.model_name}: {str(e)}")
             raise ValueError(f"Invalid or unavailable model: {self.model_name}") from e
 
-def get_llm_model():
+def get_llm_model() -> LLM:
     """Factory function per creare un'istanza di LLM"""
     provider = settings.LLM_PROVIDER.lower()
     match provider:

@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from fastapi import Depends, File
+from fastapi import Depends, File, UploadFile
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 from fastapi import HTTPException
@@ -198,7 +198,7 @@ class StringManager(FileManager):
     pass
 
 
-def get_file_manager(file: File):
+def get_file_manager(file: UploadFile):
     """
     Restituisce il file manager in base al tipo di file.
 

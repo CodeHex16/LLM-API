@@ -3,7 +3,6 @@ from langchain_openai import OpenAIEmbeddings
 import os
 from app.config import settings
 
-
 class EmbeddingProvider(ABC):
 	"""Interfaccia per i provider di embedding."""
 
@@ -19,7 +18,7 @@ class OpenAIEmbeddingProvider(EmbeddingProvider):
 		self.model_name = model_name
 		self._embedding_function = None
 	
-	def get_embedding_function(self):
+	def get_embedding_function(self) -> OpenAIEmbeddings:
 		"""Restituisce la funzione di embedding."""
 		if os.environ.get("OPENAI_API_KEY") is None and self.api_key is None:
 			raise ValueError("API key non trovata. Assicurati di averla impostata.")

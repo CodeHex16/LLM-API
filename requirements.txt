@@ -8,6 +8,12 @@ langchain-openai
 langchain_chroma
 langchain_community
 chromadb
+
+pytest
+pytest-mock
+pytest-asyncio
+httpx
+
 pytest
 pypdf
 python-multipart
