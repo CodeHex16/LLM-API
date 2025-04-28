@@ -9,8 +9,6 @@ langchain_chroma
 langchain_community
 chromadb
 
-tiktoken
-
 pytest
 pytest-mock
 pytest-asyncio
