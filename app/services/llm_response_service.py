@@ -65,11 +65,11 @@ class LLMResponseService:
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
         try:
-            stream_response = self.LLM.model.stream(messages)
+            stream_response = self.LLM.model.astream(messages)
 
             async def stream_adapter():
                 try:
-                    for chunk in stream_response:
+                    async for chunk in stream_response:
                         if hasattr(chunk, "content"):
                             content = chunk.content
                         elif isinstance(chunk, dict) and "content" in chunk:
