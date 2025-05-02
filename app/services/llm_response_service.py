@@ -46,10 +46,11 @@ class LLMResponseService:
         # TODO: gestire array messaggi
         formatted_messages = ""
         
+        print(f"question.messages: {question.messages}")
         if question.messages:
             if isinstance(question.messages, list):
                 formatted_messages = "\n".join(
-                    [f"{msg['role']}: {msg['content']}" for msg in question.messages]
+                    [f"{msg.sender}: {msg.content}" for msg in question.messages]
                 )
             else:
                 formatted_messages = question.messages
@@ -60,11 +61,11 @@ class LLMResponseService:
             SystemMessage(
                 f"Contesto: {context}\n{context_messages}",
             ),
-            SystemMessage(f"Conversazione precedente: {messages}"),
+            SystemMessage(f"Conversazione precedente: {formatted_messages}"),
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
         try:
-            stream_response = self.LLM.model.stream(messages)
+            stream_response = self.LLM.model.astream(messages)
 
             async def stream_adapter():
                 try:
@@ -104,7 +105,7 @@ class LLMResponseService:
         ]
 
         try:
-            return self.LLM.model.invoke(messages)
+            return self.LLM.model.invoke(messages).content
         except Exception as e:
             logger.error(f"Error generating chat name: {str(e)}", exc_info=True)
             raise HTTPException(
