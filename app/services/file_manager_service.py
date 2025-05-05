@@ -96,12 +96,12 @@ class FileManager(ABC):
 
         request_body = {
             "file_path": file_path,
-            "title": file.filename.split(".")[0],
+            "title": file.filename,
             "owner_email": "test@test.it",
             "uploaded_at": datetime.now().isoformat(),
         }
         upload_request_response = requests.post(
-            "http://database-api:8000/documents/upload",
+            "http://database-api:8000/documents",
             data=json.dumps(request_body),
             headers={
                 "Content-Type": "application/json",
