@@ -1,3 +1,4 @@
+from unittest.mock import MagicMock
 import pytest
 from langchain_chroma import Chroma
 from langchain_core.documents import Document
@@ -62,6 +63,19 @@ def test_chromadb_add_documents(monkeypatch):
     assert vector_db.count() == len(documents), "Should add the same number of documents to the database"
     vector_db._delete() # Clean up the database after test
 
+def test_chromadb_add_documents_error(monkeypatch):
+    # Mock the environment variable for ChromaDB
+    def mock_get_db(self):
+        raise Exception("Database error")
+   
+    monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
+    vector_db = ChromaDB()
+    monkeypatch.setattr(vector_db, "_get_db", mock_get_db)
+    documents = ["123","222"]
+ 
+    with pytest.raises(Exception) as excinfo:
+        vector_db.add_documents(documents)
+
 def test_chromadb_add_documents_empty(monkeypatch):
     # Mock the environment variable for ChromaDB
     monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
@@ -105,6 +119,18 @@ def test_chromadb_delete_documents(monkeypatch):
     vector_db._delete() # Clean up the database after test
     assert  vector_db.count()== 0, "Should delete all documents from the database"
     
+
+def test_chromadb_delete_documents(monkeypatch):
+    # Mock the environment variable for ChromaDB
+    def mock_get_db(self):
+        raise Exception("Database error")
+    monkeypatch.setattr("app.services.vector_database_service.ChromaDB._get_db", mock_get_db)
+    monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
+    vector_db = ChromaDB()
+
+    with pytest.raises(Exception) as excinfo:
+        vector_db.delete_document("test_source_1")
+
 def test_chromadb_delete_documents_empty(monkeypatch):
     # Mock the environment variable for ChromaDB
     monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
@@ -130,6 +156,19 @@ def test_chromadb_search_context(monkeypatch):
     assert len(results) > 0, "Should return search results"
     assert isinstance(results[0], Document), "Search result should be a Document instance"
     vector_db._delete() # Clean up the database after test
+
+def test_chromadb_search_context_none(monkeypatch):
+    # Mock the environment variable for ChromaDB
+    def mock_get_db(self):
+        raise Exception("Database error")
+    monkeypatch.setattr("app.services.vector_database_service.ChromaDB._get_db", mock_get_db)
+    monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
+    vector_db = ChromaDB()
+
+
+    result = vector_db.search_context("test_source_1")
+    print("result",result)
+    assert result == [], "Should not return any results when the database is not available"
 
 def test_chromadb_search_context_empty(monkeypatch):
     # Mock the environment variable for ChromaDB
@@ -192,3 +231,15 @@ def test_get_vector_database_invalid_provider(monkeypatch):
     monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "invalid_provider")
     with pytest.raises(ValueError):
         get_vector_database()
+
+def test_get_collection_count_with_client_none(monkeypatch):
+    # Mock the environment variable for ChromaDB
+    monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
+    fake_db = MagicMock()
+    fake_db.get.return_value = None
+    
+    vector_db = ChromaDB()
+    monkeypatch.setattr(vector_db,"_db", fake_db)
+
+    count = vector_db._get_collection_count()
+    assert count == 0, "Should return 0 for empty collection"

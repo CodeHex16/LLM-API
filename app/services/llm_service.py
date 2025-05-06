@@ -15,14 +15,14 @@ class LLM(ABC):
         self._initialize_model()
 
     @abstractmethod
-    def _check_environment(self):
+    def _check_environment(self):  # pragma: no cover
         """
         Controlla le variabili d'ambiente necessarie per il funzionamento del servizio
         """
         pass
 
     @abstractmethod
-    def _initialize_model(self):
+    def _initialize_model(self):  # pragma: no cover
         """
         Inizializza il modello LLM
         """

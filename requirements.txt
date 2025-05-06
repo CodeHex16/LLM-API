@@ -12,8 +12,8 @@ chromadb
 pytest
 pytest-mock
 pytest-asyncio
+python-cov
 httpx
 
-pytest
 pypdf
 python-multipart

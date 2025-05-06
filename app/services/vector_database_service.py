@@ -19,20 +19,20 @@ class VectorDatabase(ABC):
     """Interfaccia per la gestione del database vettoriale."""
 
     @abstractmethod
-    def add_documents(self, documents: List[Document]):
+    def add_documents(self, documents: List[Document]):  # pragma: no cover
         pass
 
     @abstractmethod
-    def search_context(self, query: str, results_number: int = 2) -> List[Document]:
+    def search_context(self, query: str, results_number: int = 2) -> List[Document]:  # pragma: no cover
         pass
 
     # metodi ausiliari
     @abstractmethod
-    def is_empty(self) -> bool:
+    def is_empty(self) -> bool:  # pragma: no cover
         pass
 
     @abstractmethod
-    def count(self) -> int:
+    def count(self) -> int:  # pragma: no cover
         pass
 
     # @abstractmethod

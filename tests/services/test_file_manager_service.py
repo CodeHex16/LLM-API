@@ -5,6 +5,9 @@ from io import BytesIO
 from unittest.mock import MagicMock, patch
 import os
 import asyncio
+from fastapi import HTTPException
+import requests
+from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
 def test_txt_file_manager_get_full_path(monkeypatch):
     MyTxtFileManager = TextFileManager()
@@ -105,6 +108,132 @@ async def test_text_file_manager_add_document(monkeypatch):
         # You can also check if the vector_database.add_documents was called correctly
         MyTxtFileManager.vector_database.add_documents.assert_called_once_with(["chunk1", "chunk2", "chunk3"])
 
+
+
+@pytest.mark.asyncio
+async def test_text_file_manager_add_document_error_400(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Create mock implementations for _save_file and _load_split_file
+    async def mock_save_file(file):
+        return "/mock/path/to/test.txt"  # Return a mock file path
+    
+    async def mock_load_split_file(file_path):
+        return ["chunk1", "chunk2", "chunk3"]  # Mock the chunks from file splitting
+
+    # Use monkeypatch to replace the methods with the mock implementations
+    monkeypatch.setattr(MyTxtFileManager, "_save_file", mock_save_file)
+    monkeypatch.setattr(MyTxtFileManager, "_load_split_file", mock_load_split_file)
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+
+    # Mock HTTP request using patch to completely prevent the actual request
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=400)  # Mock response with status 201
+        
+        # Create a mock UploadFile instance
+        file = MagicMock(spec=UploadFile)
+        file.filename = "test.txt"
+        file.file = BytesIO(b"Test content")  # Mock the file content
+
+        # Call the add_document method
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.add_document(file, "test_token")
+            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+            assert exc_info.value.detail == "Documento già esistente", "Should raise HTTPException with the correct detail"
+
+
+@pytest.mark.asyncio
+async def test_text_file_manager_add_document_error_500(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Create mock implementations for _save_file and _load_split_file
+    async def mock_save_file(file):
+        return "/mock/path/to/test.txt"  # Return a mock file path
+    
+    async def mock_load_split_file(file_path):
+        return ["chunk1", "chunk2", "chunk3"]  # Mock the chunks from file splitting
+
+    # Use monkeypatch to replace the methods with the mock implementations
+    monkeypatch.setattr(MyTxtFileManager, "_save_file", mock_save_file)
+    monkeypatch.setattr(MyTxtFileManager, "_load_split_file", mock_load_split_file)
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+
+    # Mock HTTP request using patch to completely prevent the actual request
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=500)  # Mock response with status 201
+        
+        # Create a mock UploadFile instance
+        file = MagicMock(spec=UploadFile)
+        file.filename = "test.txt"
+        file.file = BytesIO(b"Test content")  # Mock the file content
+
+        # Call the add_document method
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.add_document(file, "test_token")
+            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+
+
+
+@pytest.mark.asyncio
+async def test_text_file_manager_add_document_error_defalut(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Create mock implementations for _save_file and _load_split_file
+    async def mock_save_file(file):
+        return "/mock/path/to/test.txt"  # Return a mock file path
+    
+    async def mock_load_split_file(file_path):
+        return ["chunk1", "chunk2", "chunk3"]  # Mock the chunks from file splitting
+
+    # Use monkeypatch to replace the methods with the mock implementations
+    monkeypatch.setattr(MyTxtFileManager, "_save_file", mock_save_file)
+    monkeypatch.setattr(MyTxtFileManager, "_load_split_file", mock_load_split_file)
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+
+    # Mock HTTP request using patch to completely prevent the actual request
+    with patch("requests.post") as mock_post:
+        mock_post.return_value = MagicMock(status_code=501)  # Mock response with status 201
+        
+        # Create a mock UploadFile instance
+        file = MagicMock(spec=UploadFile)
+        file.filename = "test.txt"
+        file.file = BytesIO(b"Test content")  # Mock the file content
+
+        # Call the add_document method
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.add_document(file, "test_token")
+            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+
+
+@pytest.mark.asyncio
+async def test_delete_document_os_remove_error(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Mock the file deletion logic
+    monkeypatch.setattr(os, "remove", MagicMock(side_effect=OSError("File not found")))
+    monkeypatch.setattr(os.path, "exists", MagicMock(return_value=True))  # Mock os.path.exists to return True
+    monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
+
+    # Mock vector_database to avoid interaction with the actual database
+    with pytest.raises(HTTPException) as exc_info:
+        file_path = "/mock/path/to/test.txt"
+        result = await MyTxtFileManager.delete_document(file_path, "test_token")
+        assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
+        assert exc_info.value.detail.startswith(f"File {file_path} non trovato:"), "Should raise HTTPException with the correct detail"
+
+
 @pytest.mark.asyncio
 async def test_text_file_manager_delete_document(monkeypatch):
     # Create an instance of TextFileManager
@@ -134,6 +263,101 @@ async def test_text_file_manager_delete_document(monkeypatch):
 
         # Check that the vector_database.delete_document was called with the correct file path
         MyTxtFileManager.vector_database.delete_document.assert_called_once_with(file_path)
+
+    
+@pytest.mark.asyncio
+async def test_text_file_manager_delete_document_not_found(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Mock the file deletion logic
+    monkeypatch.setattr(os, "remove", MagicMock())  # Mock os.remove to avoid actual file deletion
+    monkeypatch.setattr(os.path, "exists", MagicMock(return_value=True))  # Mock os.path.exists to return True
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+    
+     # Mock the HTTP request using patch
+    with patch("requests.delete") as mock_delete:
+        mock_delete.return_value = MagicMock(status_code=400)  # Mock response with status 200
+        
+        # Call the delete_document method
+        file_path = "/mock/path/to/test.txt"
+        monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+            assert exc_info.value.detail == "Documento non trovato", "Should raise HTTPException with the correct detail"
+
+@pytest.mark.asyncio
+async def test_text_file_manager_delete_document_500_exception(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Mock the file deletion logic
+    monkeypatch.setattr(os, "remove", MagicMock())  # Mock os.remove to avoid actual file deletion
+    monkeypatch.setattr(os.path, "exists", MagicMock(return_value=True))  # Mock os.path.exists to return True
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+     # Mock the HTTP request using patch
+    with patch("requests.delete") as mock_delete:
+        mock_delete.return_value = MagicMock(status_code=500)  # Mock response with status 500
+
+        # Call the delete_document method
+        file_path = "/mock/path/to/test.txt"
+        monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
+            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+
+
+@pytest.mark.asyncio
+async def test_text_file_manager_delete_document_default_exception(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Mock the file deletion logic
+    monkeypatch.setattr(os, "remove", MagicMock())  # Mock os.remove to avoid actual file deletion
+    monkeypatch.setattr(os.path, "exists", MagicMock(return_value=True))  # Mock os.path.exists to return True
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+     # Mock the HTTP request using patch
+    with patch("requests.delete") as mock_delete:
+        mock_delete.return_value = MagicMock(status_code=501)  # Mock response with status 500
+
+        # Call the delete_document method
+        file_path = "/mock/path/to/test.txt"
+        monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
+        with pytest.raises(HTTPException) as exc_info:
+            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
+            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+
+
+@pytest.mark.asyncio
+async def test_text_file_manager_delete_path_not_found(monkeypatch):
+    # Create an instance of TextFileManager
+    MyTxtFileManager = TextFileManager()
+
+    # Mock the file deletion logic
+    monkeypatch.setattr(os, "remove", MagicMock())  # Mock os.remove to avoid actual file deletion
+    monkeypatch.setattr(os.path, "exists", MagicMock(return_value=False))  # Mock os.path.exists to return True
+
+    # Mock vector_database to avoid interaction with the actual database
+    monkeypatch.setattr(MyTxtFileManager, "vector_database", MagicMock())
+    
+    with pytest.raises(HTTPException) as exc_info:
+        # Call the delete_document method
+        file_path = "/mock/path/to/test.txt"
+        monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))
+        result = await MyTxtFileManager.delete_document(file_path, "test_token")
+
+        assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
+        assert exc_info.value.detail == f"File {file_path} non trovato: File not found", "Should raise HTTPException with the correct detail"
+        
 
 def test_get_file_manager(monkeypatch):
    
@@ -173,3 +397,19 @@ def test_get_file_manager_by_extension():
     # Test for unsupported file type
     with pytest.raises(ValueError):
         get_file_manager_by_extension("test.exe")
+
+##
+@pytest.mark.asyncio
+async def test_pdf_file_manager_load_split_file(monkeypatch):
+    MyPdfFileManager = PdfFileManager()
+    FakePdfFileManager = MagicMock()
+    FakePdfFileManager.load = MagicMock(return_value=["chunk1", "chunk2", "chunk3"])
+    
+    FakeSplitter = MagicMock()
+    FakeSplitter.split_documents = MagicMock(return_value=["chunk1", "chunk2", "chunk3"])
+    monkeypatch.setattr(MyPdfFileManager,"splitter", FakeSplitter)
+    # mock langchain_community.document_loaders.PyPDFLoader
+    monkeypatch.setattr("app.services.file_manager_service.PyPDFLoader", FakePdfFileManager)
+    await MyPdfFileManager._load_split_file("test.pdf")
+    assert FakeSplitter.split_documents.called, "Should call the split_documents method of the splitter"
+    assert isinstance(FakeSplitter.split_documents.return_value, list), "Should return a list of documents"

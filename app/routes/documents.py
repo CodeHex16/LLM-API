@@ -59,6 +59,12 @@ async def upload_file(file: UploadFile, token: str):
                     status_code=500,
                     detail="Error in uploading and processing file",
                 )
+            case _:
+                print("error detail:", e.detail)
+                raise HTTPException(
+                    status_code=500,
+                    detail="Error in uploading and processing file",
+                )
 
     return {"message": "File uploaded successfully"}
 

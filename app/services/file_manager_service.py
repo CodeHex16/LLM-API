@@ -123,6 +123,11 @@ class FileManager(ABC):
                     status_code=500,
                     detail=f"Errore nel caricare e processare file",
                 )
+            case _:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file",
+                )
         return False
 
     async def delete_document(self, file_path: str, token: str):
@@ -172,6 +177,11 @@ class FileManager(ABC):
                     detail=f"Documento non trovato",
                 )
             case 500:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file",
+                )
+            case _:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Errore nel caricare e processare file",
