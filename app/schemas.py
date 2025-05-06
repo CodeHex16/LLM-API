@@ -19,3 +19,9 @@ class Document(BaseModel):
 	title: str
 	updated_at: datetime
 	content: str
+
+class DocumentDelete(BaseModel):
+	id: str
+	title: str
+	token: str
+	current_password: str

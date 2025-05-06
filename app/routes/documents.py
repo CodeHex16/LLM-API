@@ -98,13 +98,17 @@ async def upload_file(files: List[UploadFile], token: str):
 
 
 @router.delete("/delete_file")
-async def delete_file(file_path: str, token: str):
-    print("delete file path:", file_path)
-    file_manager = get_file_manager_by_extension(file_path)
+async def delete_file(fileDelete: schemas.DocumentDelete):
+    print("delete file title:", fileDelete)
+    file_manager = get_file_manager_by_extension(fileDelete.title)
     if file_manager is None:
         raise HTTPException(status_code=400, detail="File manager not found")
     try:
-        await file_manager.delete_document(file_path, token)
+        file_path = file_manager.get_full_path(fileDelete.title)
+        print("file path:", file_path)
+        await file_manager.delete_document(
+            fileDelete.id, file_path, fileDelete.token, fileDelete.current_password
+        )
     except HTTPException as e:
         match e.status_code:
             case 404:
@@ -134,3 +138,18 @@ async def delete_file(file_path: str, token: str):
         )
 
     return {"message": "File deleted successfully"}
+
+
+@router.get("/get_documents")
+def get_documents():
+    """
+    Ottiene la lista dei documenti dal database.
+
+    Args:
+    - token (str): Il token di autenticazione dell'utente.
+
+    Raises:
+    - HTTPException: Se si verifica un errore durante il recupero dei documenti.
+    """
+
+    return os.listdir("/data/documents")

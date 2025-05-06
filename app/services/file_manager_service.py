@@ -8,6 +8,7 @@ import logging
 import json
 import requests
 from datetime import datetime
+from bson import ObjectId
 
 from app.services.vector_database_service import get_vector_database, VectorDatabase
 
@@ -22,7 +23,7 @@ class FileManager(ABC):
             chunk_overlap=100,
         )
 
-    def _get_full_path(self, filename: str) -> str:
+    def get_full_path(self, filename: str) -> str:
         """
         Restituisce il percorso completo del file.
 
@@ -49,7 +50,7 @@ class FileManager(ABC):
         contents = await file.read()
 
         path = file.filename
-        file_path = self._get_full_path(path)
+        file_path = self.get_full_path(path)
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -125,7 +126,9 @@ class FileManager(ABC):
                 )
         return False
 
-    async def delete_document(self, file_path: str, token: str):
+    async def delete_document(
+        self, file_id: str, file_path: str, token: str, current_password: str
+    ):
         """
         Elimina il file dal filesystem e dal database vettoriale e dal database.
 
@@ -136,6 +139,11 @@ class FileManager(ABC):
         - bool: True se il file è stato eliminato correttamente, False altrimenti.
         """
         # rimuovi da filesystem
+        print("INIZIO RIMOZIONE DOCUMENTO")
+        print("file_path:", file_path)
+        print("os.path.isfile(file_path):", os.path.isfile(file_path))
+        print("ls -la /data/documents", os.listdir("/data/documents"))
+
         if os.path.isfile(file_path) and os.path.exists(file_path):
             try:
                 os.remove(file_path)
@@ -150,21 +158,30 @@ class FileManager(ABC):
                 status_code=404,
                 detail=f"File {file_path} non trovato",
             )
-        
+
         # rimuovi da database vettoriale
         self.vector_database.delete_document(file_path)
 
         # rimuovi da Database API
+        print("[LLM API] file_id: pre DELETE: ", file_id, type(file_id))
         delete_req = requests.delete(
-            f"http://database-api:8000/documents/delete?file_path={file_path}",
+            f"http://database-api:8000/documents",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}",
             },
+            json={
+                "admin": {
+                    "current_password": current_password,
+                },
+                "file": {
+                    "id": file_id,
+                },
+            },
         )
-        print("delete_req:", delete_req.json())
+
         match delete_req.status_code:
-            case 200:
+            case 204:
                 print(f"Documento eliminato correttamente")
             case 400:
                 raise HTTPException(
