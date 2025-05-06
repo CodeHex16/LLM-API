@@ -8,6 +8,7 @@ import logging
 import json
 import requests
 from datetime import datetime
+from bson import ObjectId
 
 from app.services.vector_database_service import get_vector_database, VectorDatabase
 
@@ -138,6 +139,11 @@ class FileManager(ABC):
         - bool: True se il file è stato eliminato correttamente, False altrimenti.
         """
         # rimuovi da filesystem
+        print("INIZIO RIMOZIONE DOCUMENTO")
+        print("file_path:", file_path)
+        print("os.path.isfile(file_path):", os.path.isfile(file_path))
+        print("ls -la /data/documents", os.listdir("/data/documents"))
+
         if os.path.isfile(file_path) and os.path.exists(file_path):
             try:
                 os.remove(file_path)
@@ -157,6 +163,7 @@ class FileManager(ABC):
         self.vector_database.delete_document(file_path)
 
         # rimuovi da Database API
+        print("[LLM API] file_id: pre DELETE: ", file_id, type(file_id))
         delete_req = requests.delete(
             f"http://database-api:8000/documents",
             headers={
@@ -168,13 +175,13 @@ class FileManager(ABC):
                     "current_password": current_password,
                 },
                 "file": {
-                    "_id": file_id,
+                    "id": file_id,
                 },
             },
         )
-        print("delete_req:", delete_req.json())
+
         match delete_req.status_code:
-            case 200:
+            case 204:
                 print(f"Documento eliminato correttamente")
             case 400:
                 raise HTTPException(

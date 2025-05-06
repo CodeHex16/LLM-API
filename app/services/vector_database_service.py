@@ -123,6 +123,7 @@ class ChromaDB(VectorDatabase):
         try:
             db = self._get_db()
             db.delete(where={"source": document_path})
+            print(f"[VECTOR DB] Documento con PATH {document_path} eliminato.")
             logger.info(f"Documento con PATH {document_path} eliminato.")
         except Exception as e:
             logger.error(f"Errore durante l'eliminazione del documento: {e}", exc_info=True)
