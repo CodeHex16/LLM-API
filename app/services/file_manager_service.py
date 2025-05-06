@@ -22,7 +22,7 @@ class FileManager(ABC):
             chunk_overlap=100,
         )
 
-    def _get_full_path(self, filename: str) -> str:
+    def get_full_path(self, filename: str) -> str:
         """
         Restituisce il percorso completo del file.
 
@@ -49,7 +49,7 @@ class FileManager(ABC):
         contents = await file.read()
 
         path = file.filename
-        file_path = self._get_full_path(path)
+        file_path = self.get_full_path(path)
 
         os.makedirs(os.path.dirname(file_path), exist_ok=True)
 
@@ -125,7 +125,9 @@ class FileManager(ABC):
                 )
         return False
 
-    async def delete_document(self, file_path: str, token: str):
+    async def delete_document(
+        self, file_id: str, file_path: str, token: str, current_password: str
+    ):
         """
         Elimina il file dal filesystem e dal database vettoriale e dal database.
 
@@ -150,16 +152,24 @@ class FileManager(ABC):
                 status_code=404,
                 detail=f"File {file_path} non trovato",
             )
-        
+
         # rimuovi da database vettoriale
         self.vector_database.delete_document(file_path)
 
         # rimuovi da Database API
         delete_req = requests.delete(
-            f"http://database-api:8000/documents/delete?file_path={file_path}",
+            f"http://database-api:8000/documents",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}",
+            },
+            json={
+                "admin": {
+                    "current_password": current_password,
+                },
+                "file": {
+                    "_id": file_id,
+                },
             },
         )
         print("delete_req:", delete_req.json())
