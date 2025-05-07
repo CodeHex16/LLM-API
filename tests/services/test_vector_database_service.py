@@ -65,8 +65,7 @@ def test_chromadb_add_documents(monkeypatch):
 
 def test_chromadb_add_documents_error(monkeypatch):
     # Mock the environment variable for ChromaDB
-    def mock_get_db(self):
-        raise Exception("Database error")
+    mock_get_db = MagicMock(side_effect=Exception("Database error"))
    
     monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
     vector_db = ChromaDB()
@@ -120,7 +119,7 @@ def test_chromadb_delete_documents(monkeypatch):
     assert  vector_db.count()== 0, "Should delete all documents from the database"
     
 
-def test_chromadb_delete_documents(monkeypatch):
+def test_chromadb_delete_documents_exception(monkeypatch):
     # Mock the environment variable for ChromaDB
     def mock_get_db(self):
         raise Exception("Database error")

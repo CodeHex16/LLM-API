@@ -17,3 +17,6 @@ httpx
 
 pypdf
 python-multipart
+
+coverage
+coveralls

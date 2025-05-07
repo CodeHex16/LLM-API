@@ -29,17 +29,9 @@ def test_txt_file_manager_save_file(monkeypatch):
     file = MagicMock(spec=UploadFile)
     file.filename = file_name
 
-    # Simulate async read method
-    async def mock_read():
-        return file_content
-
-    # Simulate seek method 
-    def mock_seek(position):
-        pass  # Do nothing, just simulate the method
-
     # Assign mocked methods
-    file.read.return_value = mock_read
-    file.seek.return_value = mock_seek
+    file.read.return_value = file_content
+    file.seek.return_value = MagicMock(side_effect=None)  # Mock seek method
 
     # Mock _get_full_path method
     monkeypatch.setattr(MyTxtFileManager, "get_full_path", lambda x: os.path.join(".cache", x))
@@ -141,8 +133,8 @@ async def test_text_file_manager_add_document_error_400(monkeypatch):
         # Call the add_document method
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.add_document(file, "test_token")
-            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
-            assert exc_info.value.detail == "Documento già esistente", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+        assert exc_info.value.detail == "Documento già esistente", "Should raise HTTPException with the correct detail"
 
 
 @pytest.mark.asyncio
@@ -176,8 +168,8 @@ async def test_text_file_manager_add_document_error_500(monkeypatch):
         # Call the add_document method
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.add_document(file, "test_token")
-            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
-            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 400"
+        assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
 
 
@@ -212,8 +204,8 @@ async def test_text_file_manager_add_document_error_defalut(monkeypatch):
         # Call the add_document method
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.add_document(file, "test_token")
-            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
-            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 400"
+        assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
 
 @pytest.mark.asyncio
@@ -230,8 +222,8 @@ async def test_delete_document_os_remove_error(monkeypatch):
     with pytest.raises(HTTPException) as exc_info:
         file_path = "/mock/path/to/test.txt"
         result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
-        assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
-        assert exc_info.value.detail.startswith(f"File {file_path} non trovato:"), "Should raise HTTPException with the correct detail"
+    assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
+    assert exc_info.value.detail.startswith(f"File {file_path} non trovato:"), "Should raise HTTPException with the correct detail"
 
 
 @pytest.mark.asyncio
@@ -286,8 +278,8 @@ async def test_text_file_manager_delete_document_not_found(monkeypatch):
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
-            assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
-            assert exc_info.value.detail == "Documento non trovato", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
+        assert exc_info.value.detail == "Documento non trovato", "Should raise HTTPException with the correct detail"
 
 @pytest.mark.asyncio
 async def test_text_file_manager_delete_document_500_exception(monkeypatch):
@@ -309,8 +301,8 @@ async def test_text_file_manager_delete_document_500_exception(monkeypatch):
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
-            assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
-            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
+        assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
 
 @pytest.mark.asyncio
@@ -333,8 +325,8 @@ async def test_text_file_manager_delete_document_default_exception(monkeypatch):
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
             result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
-            assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
-            assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
+        assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
+        assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
 
 @pytest.mark.asyncio
@@ -355,8 +347,8 @@ async def test_text_file_manager_delete_path_not_found(monkeypatch):
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))
         result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
 
-        assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
-        assert exc_info.value.detail == f"File {file_path} non trovato: File not found", "Should raise HTTPException with the correct detail"
+    assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
+    assert exc_info.value.detail == f"File {file_path} non trovato", "Should raise HTTPException with the correct detail"
         
 
 def test_get_file_manager(monkeypatch):

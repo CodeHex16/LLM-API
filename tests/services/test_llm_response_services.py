@@ -81,7 +81,7 @@ def test_generate_llm_chat_name_exception(monkeypatch):
 
     with pytest.raises(HTTPException) as excinfo:
         llm_response_service.generate_llm_chat_name("mocked question")
-        assert excinfo.value.status_code == 500, "Should raise HTTPException with status code 500"
+    assert excinfo.value.status_code == 500, "Should raise HTTPException with status code 500"
 
 
 @pytest.mark.asyncio
@@ -111,34 +111,9 @@ async def test_generate_llm_response_with_messages_list(monkeypatch):
         assert chunk.startswith("data:"), "Chunk should start with 'data:'"
 
 
-@pytest.mark.asyncio
-async def test_generate_llm_response_with_messages_list(monkeypatch):
-    def mock_search_context(question): return "Mocked context"
-    class mockChunk:
-        def __init__(self, content):
-            self.content = content
-
-    async def mock_astream(messages):
-        for chunk in ["chunk1", "chunk2", {"content":"chunk3"}, mockChunk("chunk4"),""]:  # 模拟异步迭代
-            yield chunk
-
-    mock_LLM = MagicMock()
-    mock_LLM_MODEL = MagicMock()
-    mock_LLM_MODEL.astream = mock_astream
-    mock_LLM.model = mock_LLM_MODEL
-
-    service = LLMResponseService()
-    monkeypatch.setattr(service, "_get_context", mock_search_context)
-    question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
-    monkeypatch.setattr(service, "LLM", mock_LLM)
-
-    result = service.generate_llm_response(question)
-    assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
-    async for chunk in result.body_iterator:
-        assert chunk.startswith("data:"), "Chunk should start with 'data:'"
 
 @pytest.mark.asyncio
-async def test_generate_llm_response_with_messages_list(monkeypatch):
+async def test_generate_llm_response_with_empty_messages_list(monkeypatch):
     def mock_search_context(question): return "Mocked context"
     class mockChunk:
         def __init__(self, content):
@@ -167,9 +142,7 @@ async def test_generate_llm_response_with_messages_list(monkeypatch):
 @pytest.mark.asyncio
 async def test_generate_llm_response_with_stream_adapter_error(monkeypatch):
     def mock_search_context(question): return "Mocked context"
-    class mockChunk:
-        def __init__(self, content):
-            self.content = content
+
 
     def mock_astream(messages):
         return ""
@@ -194,9 +167,7 @@ async def test_generate_llm_response_with_stream_adapter_error(monkeypatch):
 @pytest.mark.asyncio
 async def test_generate_llm_response_with_stream_error(monkeypatch):
     def mock_search_context(question): return "Mocked context"
-    class mockChunk:
-        def __init__(self, content):
-            self.content = content
+
 
     def mock_astream(messages):
         raise Exception("Mocked exception")

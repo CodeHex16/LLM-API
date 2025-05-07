@@ -24,9 +24,9 @@ async def test_upload_file_no_filename():
         file=BytesIO(b"file content here")
     )]
     with pytest.raises(HTTPException) as exc_info:
-        response = await upload_file(files, "toktok")
-        assert "No filename provided" in response.json()["detail"]
-
+        await upload_file(files, "toktok")
+    assert exc_info.value.status_code == 400
+    assert "No filename provided" in exc_info.value.detail
 
 
 @pytest.mark.asyncio
@@ -38,8 +38,7 @@ async def test_upload_file_no_file():
 
 @pytest.mark.asyncio
 async def test_upload_file_with_error_ext(monkeypatch):
-    async def mock_add_document():
-        pass
+    mock_add_document = MagicMock()
     fileManager = MagicMock()
     fileManager.add_document = mock_add_document
     monkeypatch.setattr("app.routes.documents.get_file_manager", lambda _: fileManager)
@@ -58,10 +57,9 @@ async def test_upload_file_with_error_ext(monkeypatch):
 
 @pytest.mark.asyncio
 async def test_upload_file_with_error_mme(monkeypatch):
-    async def mock_add_document():
-        pass
+  
     fileManager = MagicMock()
-    fileManager.add_document = mock_add_document
+    fileManager.add_document = MagicMock()
     monkeypatch.setattr("app.routes.documents.get_file_manager", lambda _: fileManager)
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
         # Create the mock files

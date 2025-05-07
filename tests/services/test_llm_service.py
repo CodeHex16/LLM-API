@@ -1,7 +1,7 @@
 import pytest
 
 from app.services.llm_service import LLM, OpenAI, Ollama, get_llm_model
-
+import os
 def test_openai_initialization(monkeypatch):
     # Mock the environment variable for OpenAI API key
     monkeypatch.setattr("app.services.llm_service.settings.LLM_PROVIDER", "openai")
@@ -14,11 +14,12 @@ def test_openai_initialization(monkeypatch):
 def test_ollama_initialization(monkeypatch):
     pass
 
-def test_openai_check_environment_empty(monkeypatch):
+def test_openai_check_environment_no_empty(monkeypatch):
     # Mock the environment variable for OpenAI API key
     MyOpenAi = OpenAI(model_name="gpt-4")
     monkeypatch.setenv("OPENAI_API_KEY", "hihihi")
     MyOpenAi._check_environment()
+    assert os.environ.get("OPENAI_API_KEY") == "hihihi", "API key should be set correctly"
 
 
 def test_openai_check_environment_empty(monkeypatch):
