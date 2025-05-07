@@ -45,15 +45,16 @@ class LLMResponseService:
         context = self._get_context(question.question)
         # TODO: gestire array messaggi
         formatted_messages = ""
+        context_messages = ""
         
         print(f"question.messages: {question.messages}")
         if question.messages:
-            if isinstance(question.messages, list):
-                formatted_messages = "\n".join(
+            #if isinstance(question.messages, list):
+            formatted_messages = "\n".join(
                     [f"{msg.sender}: {msg.content}" for msg in question.messages]
                 )
-            else:
-                formatted_messages = question.messages
+            # else: # limited by pydantic_core._pydantic_core.ValidationError
+            #     formatted_messages = question.messages
             context_messages = self._get_context(formatted_messages)
 
         messages = [

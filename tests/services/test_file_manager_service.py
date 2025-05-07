@@ -12,7 +12,7 @@ from langchain_community.document_loaders import PyPDFLoader, TextLoader
 def test_txt_file_manager_get_full_path(monkeypatch):
     MyTxtFileManager = TextFileManager()
     file_name = "test.txt"
-    file_path = MyTxtFileManager._get_full_path(file_name)
+    file_path = MyTxtFileManager.get_full_path(file_name)
 
   
     expected_path = os.path.join("/data/documents", "test.txt")
@@ -42,7 +42,7 @@ def test_txt_file_manager_save_file(monkeypatch):
     file.seek.return_value = mock_seek
 
     # Mock _get_full_path method
-    monkeypatch.setattr(MyTxtFileManager, "_get_full_path", lambda x: os.path.join(".cache", x))
+    monkeypatch.setattr(MyTxtFileManager, "get_full_path", lambda x: os.path.join(".cache", x))
 
     # pass   with open(file_path, "wb") as f: 
     with patch("builtins.open", MagicMock()):
@@ -229,7 +229,7 @@ async def test_delete_document_os_remove_error(monkeypatch):
     # Mock vector_database to avoid interaction with the actual database
     with pytest.raises(HTTPException) as exc_info:
         file_path = "/mock/path/to/test.txt"
-        result = await MyTxtFileManager.delete_document(file_path, "test_token")
+        result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
         assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
         assert exc_info.value.detail.startswith(f"File {file_path} non trovato:"), "Should raise HTTPException with the correct detail"
 
@@ -248,12 +248,12 @@ async def test_text_file_manager_delete_document(monkeypatch):
 
     # Mock the HTTP request using patch
     with patch("requests.delete") as mock_delete:
-        mock_delete.return_value = MagicMock(status_code=200)  # Mock response with status 200
+        mock_delete.return_value = MagicMock(status_code=204)  # Mock response with status 200
         
         # Call the delete_document method
         file_path = "/mock/path/to/test.txt"
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
-        result = await MyTxtFileManager.delete_document(file_path, "test_token")
+        result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
 
         # Check if the result is True, indicating success
         assert result is None, "The document should be deleted successfully"
@@ -285,7 +285,7 @@ async def test_text_file_manager_delete_document_not_found(monkeypatch):
         file_path = "/mock/path/to/test.txt"
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
-            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
             assert exc_info.value.status_code == 400, "Should raise HTTPException with status code 400"
             assert exc_info.value.detail == "Documento non trovato", "Should raise HTTPException with the correct detail"
 
@@ -308,7 +308,7 @@ async def test_text_file_manager_delete_document_500_exception(monkeypatch):
         file_path = "/mock/path/to/test.txt"
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
-            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
             assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
             assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
@@ -332,7 +332,7 @@ async def test_text_file_manager_delete_document_default_exception(monkeypatch):
         file_path = "/mock/path/to/test.txt"
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))  # Mock os.path.isfile to return True
         with pytest.raises(HTTPException) as exc_info:
-            result = await MyTxtFileManager.delete_document(file_path, "test_token")
+            result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
             assert exc_info.value.status_code == 500, "Should raise HTTPException with status code 500"
             assert exc_info.value.detail == "Errore nel caricare e processare file", "Should raise HTTPException with the correct detail"
 
@@ -353,7 +353,7 @@ async def test_text_file_manager_delete_path_not_found(monkeypatch):
         # Call the delete_document method
         file_path = "/mock/path/to/test.txt"
         monkeypatch.setattr(os.path, "isfile", MagicMock(return_value=True))
-        result = await MyTxtFileManager.delete_document(file_path, "test_token")
+        result = await MyTxtFileManager.delete_document("idid",file_path, "test_token","pwdpwd")
 
         assert exc_info.value.status_code == 404, "Should raise HTTPException with status code 404"
         assert exc_info.value.detail == f"File {file_path} non trovato: File not found", "Should raise HTTPException with the correct detail"

@@ -49,26 +49,6 @@ def test_llm_response_service_get_context_exception(monkeypatch):
     assert excinfo.value.status_code == 500, "Should raise HTTPException with status code 500"
     assert str(excinfo.value.detail).startswith("Error getting context:"), "Should raise HTTPException with the correct error message"
 
-@pytest.mark.xfail(reason="This test is expected to fail due to unimplemented functionality")
-def test_llm_response_service_generate_response(monkeypatch):
-    llm_response_service = LLMResponseService()
-    question = Question(question="What is the capital of France?", messages=[])
-    # Mock the vector database search_context method
-    mock_context = "Paris is the capital of France."
-    monkeypatch.setattr(llm_response_service.vector_database, "search_context", lambda q: mock_context)
-
-    # Mock the LLM model stream method
-    mock_stream_response = ["Paris is the capital of France."]
-    
-    monkeypatch.setattr(llm_response_service.LLM.model, "stream", lambda messages: mock_stream_response)
-    
-    # monkeypatch.setattr(llm_response_service, "generate_llm_response", lambda messages: mock_stream_response)
-    result = llm_response_service.generate_llm_response(question)
-    print(result)
-    # Check if the response is as expected
-    # assert isinstance(result, ), "Should return a StreamingResponse"
-    assert result == mock_stream_response, "Should return the mocked stream response"
-
 def test_get_llm_response_service():
     llm_response_service = get_llm_response_service()
     assert isinstance(llm_response_service, LLMResponseService), "Should return an instance of LLMResponseService"
@@ -104,63 +84,134 @@ def test_generate_llm_chat_name_exception(monkeypatch):
         assert excinfo.value.status_code == 500, "Should raise HTTPException with status code 500"
 
 
-# @pytest.mark.asyncio
-# async def test_generate_llm_response_with_messages_list(monkeypatch):
-#     def mock_search_context(question): return "Mocked context"
-#     async def mock_astream(messages): yield {"content": "Paris"}
+@pytest.mark.asyncio
+async def test_generate_llm_response_with_messages_list(monkeypatch):
+    def mock_search_context(question): return "Mocked context"
+    class mockChunk:
+        def __init__(self, content):
+            self.content = content
 
-#     mock_LLM = MagicMock()
-#     mock_LLM.model.astream = mock_astream
+    async def mock_astream(messages):
+        for chunk in ["chunk1", "chunk2", {"content":"chunk3"}, mockChunk("chunk4"),""]:  # 模拟异步迭代
+            yield chunk
 
-#     service = LLMResponseService()
-#     monkeypatch.setattr(service.vector_database, "search_context", mock_search_context)
-#     monkeypatch.setattr(service, "LLM", mock_LLM)
+    mock_LLM = MagicMock()
+    mock_LLM_MODEL = MagicMock()
+    mock_LLM_MODEL.astream = mock_astream
+    mock_LLM.model = mock_LLM_MODEL
 
-#     question = Question(
-#         question="Capital of France?",
-#         messages=[Message(sender="user", content="Hello?")]
-#     )
+    service = LLMResponseService()
+    monkeypatch.setattr(service, "_get_context", mock_search_context)
+    question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
+    monkeypatch.setattr(service, "LLM", mock_LLM)
 
-#     response = service.generate_llm_response(question)
-#     assert isinstance(response, StreamingResponse)
+    result = service.generate_llm_response(question)
+    assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
+    async for chunk in result.body_iterator:
+        assert chunk.startswith("data:"), "Chunk should start with 'data:'"
 
-#     body = "".join([chunk async for chunk in response.body_iterator])
-#     assert "Paris" in body
 
-# @pytest.mark.asyncio
-# async def test_generate_llm_response_without_messages(monkeypatch):
-#     def mock_search_context(question): return "Mocked context"
-#     async def mock_astream(messages): yield {"content": "Paris"}
+@pytest.mark.asyncio
+async def test_generate_llm_response_with_messages_list(monkeypatch):
+    def mock_search_context(question): return "Mocked context"
+    class mockChunk:
+        def __init__(self, content):
+            self.content = content
 
-#     mock_LLM = MagicMock()
-#     mock_LLM.model.astream = mock_astream
+    async def mock_astream(messages):
+        for chunk in ["chunk1", "chunk2", {"content":"chunk3"}, mockChunk("chunk4"),""]:  # 模拟异步迭代
+            yield chunk
 
-#     service = LLMResponseService()
-#     monkeypatch.setattr(service.vector_database, "search_context", mock_search_context)
-#     monkeypatch.setattr(service, "LLM", mock_LLM)
+    mock_LLM = MagicMock()
+    mock_LLM_MODEL = MagicMock()
+    mock_LLM_MODEL.astream = mock_astream
+    mock_LLM.model = mock_LLM_MODEL
 
-#     question = Question(question="Capital of France?")
-#     response = service.generate_llm_response(question)
-#     body = b"".join([chunk async for chunk in response.body_iterator])
-#     assert b"Paris" in body
+    service = LLMResponseService()
+    monkeypatch.setattr(service, "_get_context", mock_search_context)
+    question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
+    monkeypatch.setattr(service, "LLM", mock_LLM)
 
-# @pytest.mark.asyncio
-# async def test_generate_llm_response_with_astream_exception(monkeypatch):
-#     def mock_search_context(question): return "Mocked context"
-#     async def mock_astream(messages): raise Exception("LLM error")
+    result = service.generate_llm_response(question)
+    assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
+    async for chunk in result.body_iterator:
+        assert chunk.startswith("data:"), "Chunk should start with 'data:'"
 
-#     mock_LLM = MagicMock()
-#     mock_LLM.model.astream = mock_astream
+@pytest.mark.asyncio
+async def test_generate_llm_response_with_messages_list(monkeypatch):
+    def mock_search_context(question): return "Mocked context"
+    class mockChunk:
+        def __init__(self, content):
+            self.content = content
 
-#     service = LLMResponseService()
-#     monkeypatch.setattr(service.vector_database, "search_context", mock_search_context)
-#     monkeypatch.setattr(service, "LLM", mock_LLM)
+    async def mock_astream(messages):
+        for chunk in ["chunk1", "chunk2", {"content":"chunk3"}, mockChunk("chunk4"),""]:  # 模拟异步迭代
+            yield chunk
 
-#     question = Question(
-#         question="Capital of France?",
-#         messages=[Message(sender="user", content="Bonjour")]
-#     )
+    mock_LLM = MagicMock()
+    mock_LLM_MODEL = MagicMock()
+    mock_LLM_MODEL.astream = mock_astream
+    mock_LLM.model = mock_LLM_MODEL
 
-#     response = service.generate_llm_response(question)
-#     body = b"".join([chunk async for chunk in response.body_iterator])
-#     assert b"[ERROR] LLM error" in body
+    service = LLMResponseService()
+    monkeypatch.setattr(service, "_get_context", mock_search_context)
+    question = Question(question="Voglio pizza!", messages=[])
+    monkeypatch.setattr(service, "LLM", mock_LLM)
+
+    result = service.generate_llm_response(question)
+    assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
+    async for chunk in result.body_iterator:
+        assert chunk.startswith("data:"), "Chunk should start with 'data:'"
+
+
+@pytest.mark.asyncio
+async def test_generate_llm_response_with_stream_adapter_error(monkeypatch):
+    def mock_search_context(question): return "Mocked context"
+    class mockChunk:
+        def __init__(self, content):
+            self.content = content
+
+    def mock_astream(messages):
+        return ""
+
+    mock_LLM = MagicMock()
+    mock_LLM_MODEL = MagicMock()
+    mock_LLM_MODEL.astream = mock_astream
+    mock_LLM.model = mock_LLM_MODEL
+
+    service = LLMResponseService()
+    monkeypatch.setattr(service, "_get_context", mock_search_context)
+    question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
+    monkeypatch.setattr(service, "LLM", mock_LLM)
+
+    result = service.generate_llm_response(question)
+    assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
+    result2 = ""
+    async for chunk in result.body_iterator:
+        result2 += chunk
+    assert "data: [ERROR]" in result2, "Should contain error message"
+
+@pytest.mark.asyncio
+async def test_generate_llm_response_with_stream_error(monkeypatch):
+    def mock_search_context(question): return "Mocked context"
+    class mockChunk:
+        def __init__(self, content):
+            self.content = content
+
+    def mock_astream(messages):
+        raise Exception("Mocked exception")
+
+    mock_LLM = MagicMock()
+    mock_LLM_MODEL = MagicMock()
+    mock_LLM_MODEL.astream = mock_astream
+    mock_LLM.model = mock_LLM_MODEL
+
+    service = LLMResponseService()
+    monkeypatch.setattr(service, "_get_context", mock_search_context)
+    question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
+    monkeypatch.setattr(service, "LLM", mock_LLM)
+
+    with pytest.raises(HTTPException) as excinfo:
+        service.generate_llm_response(question)
+    assert excinfo.value.status_code == 500, "Should raise HTTPException with status code 500"
+    assert str(excinfo.value.detail).startswith("Error in chat service:"), "Should raise HTTPException with the correct error message"
