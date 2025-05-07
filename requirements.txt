@@ -12,7 +12,7 @@ bson
 pytest
 pytest-mock
 pytest-asyncio
-python-cov
+pytest-cov
 httpx
 
 pypdf
