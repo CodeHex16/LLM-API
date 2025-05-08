@@ -66,29 +66,6 @@ class ChromaDB(VectorDatabase):
             )
         return self._db
 
-    # TODO: da spostare nel contextManager
-    # def _load_and_split_docs(self, folder_path: str) -> List[Document]:
-
-    # def _is_document_duplicate(self, document: Document) -> bool:
-    #     """Controlla se il documento è duplicato."""
-    #     doc_uuid = uuid.uuid3(
-    #         uuid.NAMESPACE_DNS, document.page_content
-    #     )
-    #     print("doc uuid:", doc_uuid)
-    #     if doc_uuid in self._get_db().get()["ids"]:
-    #         print("Documento duplicato trovato.")
-    #         logger.warning("Documento duplicato trovato.")
-    #         return True 
-    #     pass
-
-    # def _filter_duplicates(self, documents: List[Document]) -> List[Document]:
-    #     """Controlla i documenti duplicati e li rimuove."""
-    #     filtered_documents = []
-    #     for doc in documents:
-    #         if not self._is_document_duplicate(doc):
-    #             filtered_documents.append(doc)
-    #     return filtered_documents
-
     def _generate_document_ids(self, documents: List[Document]) -> List[str]:
         """Estrae gli ID dei documenti."""
         return [str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents]
@@ -129,6 +106,17 @@ class ChromaDB(VectorDatabase):
             logger.error(f"Errore durante l'eliminazione del documento: {e}", exc_info=True)
             raise
 
+    def delete_faq(self, faq_id: str):
+        """Elimina una FAQ dal database."""
+        try:
+            db = self._get_db()
+            db.delete(where={"faq_id": faq_id})
+            print(f"[VECTOR DB] FAQ con ID {faq_id} eliminata.")
+            logger.info(f"FAQ con ID {faq_id} eliminata.")
+        except Exception as e:
+            logger.error(f"Errore durante l'eliminazione della FAQ: {e}", exc_info=True)
+            raise
+
     def search_context(self, query: str, results_number: int = 2) -> List[Document]:
         # TODO: Non è detto che serva: Verifica se ci sono documenti
         # ensure_vectorized()
@@ -149,7 +137,17 @@ class ChromaDB(VectorDatabase):
         except Exception as e:
             logger.error(f"Errore durante l'eliminazione di tutti i documenti: {e}", exc_info=True)
             raise
-            
+    
+    def get_all_documents(self):
+        """Recupera tutti i documenti dal database."""
+        try:
+            db = self._get_db()
+            results = db.get()
+            return results
+        except Exception as e:
+            logger.error(f"Errore durante il recupero di tutti i documenti: {e}", exc_info=True)
+            return []
+
     # metodi ausiliari
     def _get_collection_count(self) -> int:
         """Helper per gestire accesso a dettagli Chroma."""

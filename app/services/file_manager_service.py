@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from fastapi import Depends, File, UploadFile
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
+from langchain_core.documents import Document
 from fastapi import HTTPException
 import os
 import logging
@@ -11,6 +12,8 @@ from datetime import datetime
 from bson import ObjectId
 
 from app.services.vector_database_service import get_vector_database, VectorDatabase
+import app.schemas as schemas
+from app.utils import get_object_id
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +48,19 @@ class FileManager(ABC):
         """
         # self.vector_database.delete_all_documents()
         return self.vector_database.count()
-            
+
+    def get_documents(self):
+        """
+        Restituisce i documenti dal database vettoriale.
+
+        Param:
+        - skip: int - Il numero di documenti da saltare.
+        - limit: int - Il numero massimo di documenti da restituire.
+
+        Returns:
+        - list: Una lista di documenti.
+        """
+        return self.vector_database.get_all_documents()
 
     async def _save_file(self, file: File):
         """
@@ -170,9 +185,9 @@ class FileManager(ABC):
         match delete_req.status_code:
             case 204:
                 print(f"Documento eliminato correttamente")
-            case 400:
+            case 404:
                 raise HTTPException(
-                    status_code=400,
+                    status_code=404,
                     detail=f"Documento non trovato",
                 )
             case 401:
@@ -223,7 +238,132 @@ class PdfFileManager(FileManager):
 
 
 class StringManager(FileManager):
-    pass
+    async def _load_split_file(self, faq: schemas.FAQ):
+        data = Document(
+            page_content=f"Domanda: {faq.question}\nRisposta: {faq.answer}",
+            metadata={"source": "faqs", "faq_id": faq.id},
+        )
+        print("[StringManager] data:", data)
+        chunks = self.splitter.split_documents([data])
+        return chunks
+
+    async def add_faq(self, faq: schemas.FAQCreate, token: str):
+        """
+        Divide la faq in chunk,
+        la salva nel database vettoriale.
+
+        Param:
+        - faq: schemas.FAQ - La faq da caricare.
+        """
+        print("[StringManager] adding faq:", faq)
+
+        ris = requests.post(
+            "http://database-api:8000/faqs",
+            headers={"Authorization": f"Bearer {token}"},
+            json=faq.dict(),
+        )
+        faq_json = ris.json()
+
+        if ris.status_code != 201:
+            raise HTTPException(status_code=ris.status_code, detail=ris.json())
+
+        faq_db = schemas.FAQ(
+            id=faq_json["id"],
+            title=faq.title,
+            question=faq.question,
+            answer=faq.answer,
+        )
+        chunks = await self._load_split_file(faq_db)
+        self.vector_database.add_documents(chunks)
+
+        return faq_db
+
+    async def delete_faq(self, faq: schemas.FAQDelete, token: str):
+        """
+        Elimina la faq dal database vettoriale e dal database.
+
+        Param:
+        - faq: schemas.FAQDelete - La faq da eliminare.
+        - token: str - Il token di autenticazione.
+        """
+        # rimuovi da Database API
+        delete_req = requests.delete(
+            f"http://database-api:8000/faqs/{faq.id}",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+            json={
+                "current_password": faq.admin_password, 
+            },
+        )
+
+        match delete_req.status_code:
+            case 204:
+                print(f"FAQ eliminata correttamente")
+            case 404:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"FAQ non trovata",
+                )
+            case 401:
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Password errata",
+                )
+            case _:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file {delete_req.text}",
+                )
+
+        # rimuovi da database vettoriale
+        self.vector_database.delete_faq(faq.id)
+
+    async def update_faq(self, faq: schemas.FAQ, token: str):
+        """
+        Aggiorna la faq nel database.
+
+        Param:
+        - faq: schemas.FAQUpdate - La faq da aggiornare.
+        - token: str - Il token di autenticazione.
+        """
+        # rimuovi da Database API
+        update_req = requests.patch(
+            f"http://database-api:8000/faqs/{faq.id}",
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {token}",
+            },
+            json={
+                "title": faq.title,
+                "question": faq.question,
+                "answer": faq.answer,
+            },
+        )
+
+        match update_req.status_code:
+            case 200:
+                print(f"FAQ aggiornata correttamente")
+            case 404:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"FAQ non trovata",
+                )
+            case 401:
+                raise HTTPException(
+                    status_code=401,
+                    detail=f"Password errata",
+                )
+            case _:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file {update_req.text}",
+                )
+    
+        self.vector_database.delete_faq(faq.id)
+        chunks = await self._load_split_file(faq)
+        self.vector_database.add_documents(chunks)        
 
 
 def get_file_manager(file: UploadFile = None):
@@ -239,6 +379,7 @@ def get_file_manager(file: UploadFile = None):
     if file is None:
         return TextFileManager()
     match file.content_type:
+        # TODO: capire se catcha anche le stringhe(=faq)
         case "text/plain":
             return TextFileManager()
         case "application/pdf":
@@ -247,7 +388,7 @@ def get_file_manager(file: UploadFile = None):
             raise ValueError("Unsupported file type")
 
 
-def get_file_manager_by_extension(file_path: str):
+def get_file_manager_by_extension(file_path: str = None):
     """
     Restituisce il file manager in base all'estensione del file.
 
@@ -257,6 +398,8 @@ def get_file_manager_by_extension(file_path: str):
     Returns:
     - FileManager: Il file manager appropriato.
     """
+    if file_path is None:
+        return StringManager()
     _, ext = os.path.splitext(file_path)
     match ext:
         case ".txt":

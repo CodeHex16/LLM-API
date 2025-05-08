@@ -3,7 +3,6 @@ from app.services.llm_service import LLM, OpenAI
 from typing import List
 import os
 
-# from app.services.chroma_services import embedding
 from app.services.file_manager_service import (
     get_file_manager,
     get_file_manager_by_extension,
@@ -18,18 +17,17 @@ router = APIRouter(
 )
 
 
-@router.post("/upload_file")
+@router.post("")
 async def upload_file(files: List[UploadFile], token: str):
     """
     Carica il file nel database vettoriale
 
-    Args:
-    - files (List[UploadFile]): I file da caricare. Devono essere file di testo o PDF.
+    ### Args:
+    * **files (List[UploadFile])**: I file da caricare. Devono essere file di testo o PDF.
 
-    Raises:
-    - HTTPException: Se il file non è valido o se si verifica un errore durante il caricamento.
-    - HTTPException: Se il file esiste già nel database vettoriale.
-    - HTTPException: Se si verifica un errore durante il caricamento e l'elaborazione del file.
+    ### Raises:
+    * **HTTPException.400_BAD_REQUEST**: Se non sono stati forniti file o se i file non sono di tipo testo o PDF.
+    * **HTTPException.500_INTERNAL_SERVER_ERROR**: Se si verifica un errore durante il caricamento dei file.
     """
 
     if not files:
@@ -97,8 +95,17 @@ async def upload_file(files: List[UploadFile], token: str):
         }
 
 
-@router.delete("/delete_file")
+@router.delete("")
 async def delete_file(fileDelete: schemas.DocumentDelete):
+    """
+    Elimina un file dal database.
+
+    ### Args:
+    * **fileDelete (schemas.DocumentDelete)**: Il file da eliminare. Deve contenere il titolo, il token e la password corrente.
+    ### Raises:
+    * **HTTPException.400_BAD_REQUEST**: Se il file non esiste o se si verifica un errore durante l'eliminazione.
+    * **HTTPException.500_INTERNAL_SERVER_ERROR**: Se si verifica un errore durante l'eliminazione del file.
+    """
     print("delete file title:", fileDelete)
     file_manager = get_file_manager_by_extension(fileDelete.title)
     if file_manager is None:
@@ -113,7 +120,7 @@ async def delete_file(fileDelete: schemas.DocumentDelete):
     return {"message": "File deleted successfully"}
 
 
-@router.get("/get_documents")
+@router.get("")
 def get_documents():
     """
     Ottiene la lista dei documenti dal database.
@@ -125,6 +132,4 @@ def get_documents():
     - HTTPException: Se si verifica un errore durante il recupero dei documenti.
     """
     file_manager = get_file_manager()
-    return file_manager.get_documents_number(), os.listdir("/data/documents")
-    
-
+    return file_manager.get_documents_number(), file_manager.get_documents(),os.listdir("/data/documents")
