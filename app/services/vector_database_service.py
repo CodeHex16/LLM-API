@@ -140,17 +140,30 @@ class ChromaDB(VectorDatabase):
             logger.error(f"Errore durante la similarity search: {e}", exc_info=True)
             return []
 
+    def delete_all_documents(self):
+        """Elimina tutti i documenti dal database."""
+        try:
+            db = self._get_db()
+            db.reset_collection()
+            print("[VECTOR DB] Tutti i documenti eliminati.")
+        except Exception as e:
+            logger.error(f"Errore durante l'eliminazione di tutti i documenti: {e}", exc_info=True)
+            raise
+            
     # metodi ausiliari
     def _get_collection_count(self) -> int:
         """Helper per gestire accesso a dettagli Chroma."""
         try:
-            client = self._db.get()
-            if client and self._db._collection:
-                return self._db._collection.count()
+            db_instance = self._get_db()
+            if db_instance and db_instance._collection:
+                return db_instance._collection.count()
+            print(
+                "Impossibile ottenere il count: istanza DB o _collection non disponibile dopo _get_db()."
+            )
             return 0
         except Exception as e:
-            logger.warning(
-                f"Impossibile ottenere il count della collection (potrebbe non esistere ancora): {e}"
+            print(
+                f"Errore durante il recupero del count della collection: {e}"
             )
             return 0
 

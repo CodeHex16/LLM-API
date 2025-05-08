@@ -36,6 +36,17 @@ class FileManager(ABC):
         documents_dir = os.environ.get("DOCUMENTS_DIR", "/data/documents")
         return os.path.join(documents_dir, filename)
 
+    def get_documents_number(self):
+        """
+        Restituisce le statistiche sui documenti.
+
+        Returns:
+        - dict: Un dizionario contenente le statistiche sui documenti.
+        """
+        # self.vector_database.delete_all_documents()
+        return self.vector_database.count()
+            
+
     async def _save_file(self, file: File):
         """
         Salva il file nel filesystem.
@@ -166,9 +177,9 @@ class FileManager(ABC):
                 )
             case 401:
                 raise HTTPException(
-					status_code=401,
-					detail=f"Password errata",
-				)
+                    status_code=401,
+                    detail=f"Password errata",
+                )
             case 500:
                 raise HTTPException(
                     status_code=500,
@@ -215,7 +226,7 @@ class StringManager(FileManager):
     pass
 
 
-def get_file_manager(file: UploadFile):
+def get_file_manager(file: UploadFile = None):
     """
     Restituisce il file manager in base al tipo di file.
 
@@ -225,6 +236,8 @@ def get_file_manager(file: UploadFile):
     Returns:
     - FileManager: Il file manager appropriato.
     """
+    if file is None:
+        return TextFileManager()
     match file.content_type:
         case "text/plain":
             return TextFileManager()

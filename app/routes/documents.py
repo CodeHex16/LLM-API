@@ -124,5 +124,7 @@ def get_documents():
     Raises:
     - HTTPException: Se si verifica un errore durante il recupero dei documenti.
     """
+    file_manager = get_file_manager()
+    return file_manager.get_documents_number(), os.listdir("/data/documents")
+    
 
-    return os.listdir("/data/documents")

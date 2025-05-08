@@ -33,10 +33,10 @@ class LLMResponseService:
         try:
             question_context = self.vector_database.search_context(question)
             if not question_context:
-                raise ValueError("No context found for the question.")
+                return ""
             return question_context
         except Exception as e:
-            logger.error(f"Error getting context: {str(e)}", exc_info=True)
+            print(f"Error getting context: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Error getting context: {str(e)}"
             )
@@ -46,7 +46,6 @@ class LLMResponseService:
         # TODO: gestire array messaggi
         formatted_messages = ""
         
-        print(f"question.messages: {question.messages}")
         if question.messages:
             if isinstance(question.messages, list):
                 formatted_messages = "\n".join(
@@ -64,6 +63,9 @@ class LLMResponseService:
             SystemMessage(f"Conversazione precedente: {formatted_messages}"),
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
+        print()
+        print(f"PROMPT: {context} {context_messages}")
+        print()
         try:
             stream_response = self.LLM.model.astream(messages)
 
