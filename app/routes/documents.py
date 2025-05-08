@@ -103,39 +103,12 @@ async def delete_file(fileDelete: schemas.DocumentDelete):
     file_manager = get_file_manager_by_extension(fileDelete.title)
     if file_manager is None:
         raise HTTPException(status_code=400, detail="File manager not found")
-    try:
-        file_path = file_manager.get_full_path(fileDelete.title)
-        print("file path:", file_path)
-        await file_manager.delete_document(
-            fileDelete.id, file_path, fileDelete.token, fileDelete.current_password
-        )
-    except HTTPException as e:
-        match e.status_code:
-            case 404:
-                print("error detail:", e.detail)
-                raise HTTPException(
-                    status_code=404,
-                    detail="Document not found",
-                )
-            case 500:
-                print("error detail:", e.detail)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error in deleting file",
-                )
-            case _:
-                print("error detail:", e.detail)
-                raise HTTPException(
-                    status_code=500,
-                    detail="Error in deleting file",
-                )
 
-    except Exception as e:
-        print("error detail:", e)
-        raise HTTPException(
-            status_code=500,
-            detail="Error in deleting file",
-        )
+    file_path = file_manager.get_full_path(fileDelete.title)
+    print("file path:", file_path)
+    await file_manager.delete_document(
+        fileDelete.id, file_path, fileDelete.token, fileDelete.current_password
+    )
 
     return {"message": "File deleted successfully"}
 

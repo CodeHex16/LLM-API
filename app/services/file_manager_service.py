@@ -138,32 +138,8 @@ class FileManager(ABC):
         Returns:
         - bool: True se il file è stato eliminato correttamente, False altrimenti.
         """
-        # rimuovi da filesystem
-        print("INIZIO RIMOZIONE DOCUMENTO")
-        print("file_path:", file_path)
-        print("os.path.isfile(file_path):", os.path.isfile(file_path))
-        print("ls -la /data/documents", os.listdir("/data/documents"))
-
-        if os.path.isfile(file_path) and os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-            except Exception as e:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"File {file_path} non trovato: {e}",
-                )
-            logger.info(f"File {file_path} eliminato")
-        else:
-            raise HTTPException(
-                status_code=404,
-                detail=f"File {file_path} non trovato",
-            )
-
-        # rimuovi da database vettoriale
-        self.vector_database.delete_document(file_path)
 
         # rimuovi da Database API
-        print("[LLM API] file_id: pre DELETE: ", file_id, type(file_id))
         delete_req = requests.delete(
             f"http://database-api:8000/documents",
             headers={
@@ -188,11 +164,35 @@ class FileManager(ABC):
                     status_code=400,
                     detail=f"Documento non trovato",
                 )
+            case 401:
+                raise HTTPException(
+					status_code=401,
+					detail=f"Password errata",
+				)
             case 500:
                 raise HTTPException(
                     status_code=500,
-                    detail=f"Errore nel caricare e processare file",
+                    detail=f"Errore nel caricare e processare file {delete_req.text}",
                 )
+
+        # rimuovi da filesystem
+        if os.path.isfile(file_path) and os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+            except Exception as e:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"File {file_path} non trovato: {e}",
+                )
+            logger.info(f"File {file_path} eliminato")
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail=f"File {file_path} non trovato",
+            )
+
+        # rimuovi da database vettoriale
+        self.vector_database.delete_document(file_path)
 
 
 class TextFileManager(FileManager):
