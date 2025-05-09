@@ -1,5 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
-from app.services.llm_service import LLM, OpenAI
+from fastapi import APIRouter, HTTPException, UploadFile
 from typing import List
 import os
 
@@ -20,7 +19,7 @@ router = APIRouter(
 @router.post("")
 async def upload_file(files: List[UploadFile], token: str):
     """
-    Carica il file nel database vettoriale
+    Carica il file nel database vettoriale.
 
     ### Args:
     * **files (List[UploadFile])**: I file da caricare. Devono essere file di testo o PDF.
@@ -102,6 +101,7 @@ async def delete_file(fileDelete: schemas.DocumentDelete):
 
     ### Args:
     * **fileDelete (schemas.DocumentDelete)**: Il file da eliminare. Deve contenere il titolo, il token e la password corrente.
+
     ### Raises:
     * **HTTPException.400_BAD_REQUEST**: Se il file non esiste o se si verifica un errore durante l'eliminazione.
     * **HTTPException.500_INTERNAL_SERVER_ERROR**: Se si verifica un errore durante l'eliminazione del file.
@@ -123,13 +123,12 @@ async def delete_file(fileDelete: schemas.DocumentDelete):
 @router.get("")
 def get_documents():
     """
-    Ottiene la lista dei documenti dal database.
+    Restituisce il numero di documenti e i loro nomi.
 
-    Args:
-    - token (str): Il token di autenticazione dell'utente.
-
-    Raises:
-    - HTTPException: Se si verifica un errore durante il recupero dei documenti.
+    ### Returns:
+    * **int**: Il numero di documenti.
+    * **List[str]**: I nomi dei documenti.
+    * **List[str]**: I nomi dei file nella directory /data/documents.
     """
     file_manager = get_file_manager()
     return file_manager.get_documents_number(), file_manager.get_documents(),os.listdir("/data/documents")

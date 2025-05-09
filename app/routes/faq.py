@@ -1,10 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
-from app.services.llm_service import LLM, OpenAI
-from typing import List
-import requests
+from fastapi import APIRouter, HTTPException
 
 from app.services.file_manager_service import (
-    get_file_manager,
     get_file_manager_by_extension,
 )
 
@@ -16,8 +12,9 @@ router = APIRouter(
     prefix="/faqs",
 )
 
+
 @router.post("")
-async def create_faq(faq: schemas.FAQCreate, token:str):
+async def create_faq(faq: schemas.FAQBase, token: str):
     """
     Crea una nuova FAQ.
 
@@ -40,8 +37,9 @@ async def create_faq(faq: schemas.FAQCreate, token:str):
 
     return {"faq": faq_db, "message": "FAQ created successfully"}
 
+
 @router.delete("")
-async def delete_faq(faq: schemas.FAQDelete, token:str):
+async def delete_faq(faq: schemas.FAQDelete, token: str):
     """
     Elimina una FAQ esistente.
 
@@ -63,8 +61,9 @@ async def delete_faq(faq: schemas.FAQDelete, token:str):
     await file_manager.delete_faq(faq, token)
     return {"message": "FAQ deleted successfully"}
 
+
 @router.put("")
-async def update_faq(faq: schemas.FAQ, token:str):
+async def update_faq(faq: schemas.FAQ, token: str):
     """
     Aggiorna una FAQ esistente.
 
@@ -79,10 +78,10 @@ async def update_faq(faq: schemas.FAQ, token:str):
     """
     if not faq:
         raise HTTPException(status_code=400, detail="No data provided for update")
-    
+
     file_manager = get_file_manager_by_extension()
     if file_manager is None:
         raise HTTPException(status_code=500, detail="File manager not found")
-    
+
     faq_db = await file_manager.update_faq(faq, token)
     return {"faq": faq_db, "message": "FAQ updated successfully"}

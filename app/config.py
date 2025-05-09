@@ -3,10 +3,10 @@ import os
 
 
 class Settings(BaseSettings):
-    OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY", "")
+    OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
     DOCUMENTS_FOLDER: str = "documenti"
     VECTOR_DB_PROVIDER: str = "chroma"
-    VECTOR_DB_PERSIST_DIRECTORY: str = "chroma_db"
+    VECTOR_DB_DIRECTORY: str = "chroma_db"
     EMBEDDING_MODEL_NAME: str = "text-embedding-ada-002"
     LLM_MODEL_NAME: str = "gpt-4o-mini"
     LLM_PROVIDER: str = "openai"
@@ -19,7 +19,7 @@ class Settings(BaseSettings):
         Regole comportamentali:
         - È essenziale che tu usi il più possibile le informazioni fornite dai documenti passati come contesto.
         - Se una risposta non è disponibile, informare l'utente e suggerire di consultare l'assistenza clienti.
-        - Sii chiaro ed elenca metodicamente le infomazioni richieste.
+        - Sii chiaro ed elenca metodicamente le informazioni richieste.
 		- Non esprimere opinioni personali o fare supposizioni.
         - Non fornire informazioni personali.
         """

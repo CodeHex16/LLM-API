@@ -9,11 +9,9 @@ import logging
 import json
 import requests
 from datetime import datetime
-from bson import ObjectId
 
-from app.services.vector_database_service import get_vector_database, VectorDatabase
+from app.services.vector_database_service import get_vector_database
 import app.schemas as schemas
-from app.utils import get_object_id
 from app.config import settings
 
 logger = logging.getLogger(__name__)
@@ -21,8 +19,8 @@ logger = logging.getLogger(__name__)
 
 class FileManager(ABC):
     def __init__(self):
-        self.vector_database = get_vector_database()
-        self.splitter = RecursiveCharacterTextSplitter(
+        self._vector_database = get_vector_database()
+        self._splitter = RecursiveCharacterTextSplitter(
             chunk_size=settings.CHUNK_SIZE,
             chunk_overlap=settings.CHUNK_OVERLAP,
         )
@@ -48,7 +46,7 @@ class FileManager(ABC):
         - dict: Un dizionario contenente le statistiche sui documenti.
         """
         # self.vector_database.delete_all_documents()
-        return self.vector_database.count()
+        return self._vector_database.count()
 
     def get_documents(self):
         """
@@ -61,7 +59,7 @@ class FileManager(ABC):
         Returns:
         - list: Una lista di documenti.
         """
-        return self.vector_database.get_all_documents()
+        return self._vector_database.get_all_documents()
 
     async def _save_file(self, file: File):
         """
@@ -120,7 +118,7 @@ class FileManager(ABC):
         file_path = await self._save_file(file)
         chunks = await self._load_split_file(file_path)
 
-        self.vector_database.add_documents(chunks)
+        self._vector_database.add_documents(chunks)
 
         request_body = {
             "file_path": file_path,
@@ -219,14 +217,14 @@ class FileManager(ABC):
             )
 
         # rimuovi da database vettoriale
-        self.vector_database.delete_document(file_path)
+        self._vector_database.delete_document(file_path)
 
 
 class TextFileManager(FileManager):
     async def _load_split_file(self, file_path: str):
         loader = TextLoader(file_path, encoding="utf-8")
         data = loader.load()
-        chunks = self.splitter.split_documents(data)
+        chunks = self._splitter.split_documents(data)
         return chunks
 
 
@@ -234,7 +232,7 @@ class PdfFileManager(FileManager):
     async def _load_split_file(self, file_path: str):
         loader = PyPDFLoader(file_path, mode="single")
         data = loader.load()
-        chunks = self.splitter.split_documents(data)
+        chunks = self._splitter.split_documents(data)
         return chunks
 
 
@@ -245,10 +243,10 @@ class StringManager(FileManager):
             metadata={"source": "faqs", "faq_id": faq.id},
         )
         print("[StringManager] data:", data)
-        chunks = self.splitter.split_documents([data])
+        chunks = self._splitter.split_documents([data])
         return chunks
 
-    async def add_faq(self, faq: schemas.FAQCreate, token: str):
+    async def add_faq(self, faq: schemas.FAQBase, token: str):
         """
         Divide la faq in chunk,
         la salva nel database vettoriale.
@@ -275,7 +273,7 @@ class StringManager(FileManager):
             answer=faq.answer,
         )
         chunks = await self._load_split_file(faq_db)
-        self.vector_database.add_documents(chunks)
+        self._vector_database.add_documents(chunks)
 
         return faq_db
 
@@ -295,7 +293,7 @@ class StringManager(FileManager):
                 "Authorization": f"Bearer {token}",
             },
             json={
-                "current_password": faq.admin_password, 
+                "current_password": faq.admin_password,
             },
         )
 
@@ -319,7 +317,7 @@ class StringManager(FileManager):
                 )
 
         # rimuovi da database vettoriale
-        self.vector_database.delete_faq(faq.id)
+        self._vector_database.delete_faq(faq.id)
 
     async def update_faq(self, faq: schemas.FAQ, token: str):
         """
@@ -361,10 +359,10 @@ class StringManager(FileManager):
                     status_code=500,
                     detail=f"Errore nel caricare e processare file {update_req.text}",
                 )
-    
-        self.vector_database.delete_faq(faq.id)
+
+        self._vector_database.delete_faq(faq.id)
         chunks = await self._load_split_file(faq)
-        self.vector_database.add_documents(chunks)        
+        self._vector_database.add_documents(chunks)
 
 
 def get_file_manager(file: UploadFile = None):

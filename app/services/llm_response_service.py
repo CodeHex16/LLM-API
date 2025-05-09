@@ -20,16 +20,16 @@ load_dotenv()
 
 class LLMResponseService:
     def __init__(self):
-        self.LLM = get_llm_model()
-        self.vector_database = get_vector_database()
-        self.CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
+        self._LLM = get_llm_model()
+        self._vector_database = get_vector_database()
+        self._CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
 
     def _get_context(self, question: str) -> str:
         """
         Get the context for the question from the vector database.
         """
         try:
-            question_context = self.vector_database.search_context(question)
+            question_context = self._vector_database.search_context(question)
             if not question_context:
                 return ""
             output = []
@@ -57,7 +57,7 @@ class LLMResponseService:
             context_messages = self._get_context(formatted_messages)
 
         messages = [
-            SystemMessage(self.CHATBOT_INSTRUCTIONS),
+            SystemMessage(self._CHATBOT_INSTRUCTIONS),
             SystemMessage(
                 f"Contesto: {context}\n{context_messages}",
             ),
@@ -68,7 +68,7 @@ class LLMResponseService:
         print(f"PROMPT: {context} {context_messages}")
         print()
         try:
-            stream_response = self.LLM.model.astream(messages)
+            stream_response = self._LLM._model.astream(messages)
 
             async def stream_adapter():
                 try:
@@ -98,8 +98,6 @@ class LLMResponseService:
         return StreamingResponse(stream_adapter(), media_type="text/event-stream")
 
     def generate_llm_chat_name(self, chat_history: str) -> str:
-        messages_context = self._get_context(chat_history)
-
         messages = [
             SystemMessage(
                 "Genera un nome per la chat in base alle domande e risposte fornite, deve essere composto da massimo 40 caratteri, non deve contenere informazioni personali e deve essere professionale. Rispondi solo con il nome della chat. Evita di includere 'chatbot' o 'assistente'. Deve racchiudere gli argomenti trattati."
@@ -108,7 +106,7 @@ class LLMResponseService:
         ]
 
         try:
-            return self.LLM.model.invoke(messages).content
+            return self._LLM._model.invoke(messages).content
         except Exception as e:
             logger.error(f"Error generating chat name: {str(e)}", exc_info=True)
             raise HTTPException(
