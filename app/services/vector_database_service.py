@@ -23,7 +23,7 @@ class VectorDatabase(ABC):
         pass
 
     @abstractmethod
-    def search_context(self, query: str, results_number: int = 2) -> List[Document]:
+    def search_context(self, query: str, results_number: int = 4) -> List[Document]:
         pass
 
     # metodi ausiliari
@@ -117,7 +117,7 @@ class ChromaDB(VectorDatabase):
             logger.error(f"Errore durante l'eliminazione della FAQ: {e}", exc_info=True)
             raise
 
-    def search_context(self, query: str, results_number: int = 2) -> List[Document]:
+    def search_context(self, query: str, results_number: int = 4) -> List[Document]:
         # TODO: Non è detto che serva: Verifica se ci sono documenti
         # ensure_vectorized()
         try:

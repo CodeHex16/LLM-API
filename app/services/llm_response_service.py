@@ -19,9 +19,7 @@ load_dotenv()
 
 
 class LLMResponseService:
-    def __init__(
-        self
-    ):
+    def __init__(self):
         self.LLM = get_llm_model()
         self.vector_database = get_vector_database()
         self.CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
@@ -34,18 +32,21 @@ class LLMResponseService:
             question_context = self.vector_database.search_context(question)
             if not question_context:
                 return ""
-            return question_context
+            output = []
+            for doc in question_context:
+                output.append(doc.page_content)
+            return output
         except Exception as e:
             print(f"Error getting context: {str(e)}", exc_info=True)
             raise HTTPException(
                 status_code=500, detail=f"Error getting context: {str(e)}"
             )
 
-    def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:        
+    def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
         context = self._get_context(question.question)
         # TODO: gestire array messaggi
         formatted_messages = ""
-        
+
         if question.messages:
             if isinstance(question.messages, list):
                 formatted_messages = "\n".join(

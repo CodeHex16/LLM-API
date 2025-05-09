@@ -14,6 +14,7 @@ from bson import ObjectId
 from app.services.vector_database_service import get_vector_database, VectorDatabase
 import app.schemas as schemas
 from app.utils import get_object_id
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -22,8 +23,8 @@ class FileManager(ABC):
     def __init__(self):
         self.vector_database = get_vector_database()
         self.splitter = RecursiveCharacterTextSplitter(
-            chunk_size=400,
-            chunk_overlap=100,
+            chunk_size=settings.CHUNK_SIZE,
+            chunk_overlap=settings.CHUNK_OVERLAP,
         )
 
     def get_full_path(self, filename: str) -> str:
