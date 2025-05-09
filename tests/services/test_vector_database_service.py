@@ -16,12 +16,14 @@ def test_chromadb_initialization(monkeypatch):
     assert isinstance(vector_db, ChromaDB), "Expected an instance of ChromaDB class"
     vector_db._delete() # Clean up the database after test
 
-def test_chromadb_initialization_with_persist_directory(monkeypatch):
+def test_chromadb_initialization_with_persist_directory(tmp_path,monkeypatch):
     # Mock the environment variable for ChromaDB with a custom persist directory
+    temp_dir = tmp_path / "hihi"
+    temp_dir.mkdir()
     monkeypatch.setattr("app.services.vector_database_service.settings.VECTOR_DB_PROVIDER", "chroma")
-    vector_db = ChromaDB("/custom/path")
+    vector_db = ChromaDB(str(temp_dir))
     assert vector_db is not None, "ChromaDB instance should be initialized"
-    assert vector_db.persist_directory == "/custom/path", "Persist directory should be '/custom/path'"
+    assert vector_db.persist_directory == str(temp_dir), "Persist directory should be '{{str(temp_dir)}}'"
     assert isinstance(vector_db, ChromaDB), "Expected an instance of ChromaDB class"
     vector_db._delete() # Clean up the database after test
 

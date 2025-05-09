@@ -147,7 +147,7 @@ class FileManager(ABC):
         print("INIZIO RIMOZIONE DOCUMENTO")
         print("file_path:", file_path)
         print("os.path.isfile(file_path):", os.path.isfile(file_path))
-        print("ls -la /data/documents", os.listdir("/data/documents"))
+        print("ls -la " + os.getenv("DOCUMENTS_DIR","/data/documents"), os.listdir(os.getenv("DOCUMENTS_DIR","/data/documents")))
 
         if os.path.isfile(file_path) and os.path.exists(file_path):
             try:

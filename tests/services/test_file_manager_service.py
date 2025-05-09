@@ -9,13 +9,23 @@ from fastapi import HTTPException
 import requests
 from langchain_community.document_loaders import PyPDFLoader, TextLoader
 
-def test_txt_file_manager_get_full_path(monkeypatch):
+@pytest.fixture(autouse=True)
+def documents_dir(tmp_path, monkeypatch):
+    # Create a temporary directory for the test
+    temp_dir = tmp_path / "documents"
+    temp_dir.mkdir()
+
+    monkeypatch.setenv("DOCUMENTS_DIR", str(temp_dir))
+    # Return the path to the temporary directory
+    yield str(temp_dir)
+    # Cleanup is handled by pytest's tmp_path fixture
+
+
+def test_txt_file_manager_get_full_path(documents_dir,monkeypatch):
     MyTxtFileManager = TextFileManager()
     file_name = "test.txt"
     file_path = MyTxtFileManager.get_full_path(file_name)
-
-  
-    expected_path = os.path.join("/data/documents", "test.txt")
+    expected_path = os.path.join(documents_dir, "test.txt")
     assert file_path == expected_path, "Should return the correct full path for the .txt file"
 
 
@@ -306,12 +316,12 @@ async def test_text_file_manager_delete_document_500_exception(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_text_file_manager_delete_document_default_exception(monkeypatch):
+async def test_text_file_manager_delete_document_default_exception(documents_dir,monkeypatch):
     # Create an instance of TextFileManager
     MyTxtFileManager = TextFileManager()
 
     # Mock the file deletion logic
-    monkeypatch.setattr(os, "remove", MagicMock())  # Mock os.remove to avoid actual file deletion
+    monkeypatch.setattr(os, "remove", MagicMock(return_value=True))  # Mock os.remove to avoid actual file deletion
     monkeypatch.setattr(os.path, "exists", MagicMock(return_value=True))  # Mock os.path.exists to return True
 
     # Mock vector_database to avoid interaction with the actual database

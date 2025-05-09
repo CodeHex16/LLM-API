@@ -32,8 +32,6 @@ jobs:
 
       # Run tests and collect coverage data
       - name: Run tests and collect coverage
-        env: 
-          OPENAI_API_KEY: testkey
         run: |
           coverage run -m pytest
           coverage report

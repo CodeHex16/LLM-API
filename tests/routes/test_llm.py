@@ -20,7 +20,7 @@ async def test_create_chat_response_success(monkeypatch):
     monkeypatch.setattr(LLMResponseService, "generate_llm_response", fake_generate_llm_response)
 
     # Using AsyncClient to test FastAPI route
-    async with AsyncClient(app=app, base_url="http://test") as ac:
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
         response = await ac.post("/llm/", json={"question": "Ciao, come stai?"})
 
     # Add assertions as needed
