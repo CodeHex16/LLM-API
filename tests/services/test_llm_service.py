@@ -63,7 +63,7 @@ def test_get_llm_model_ollama(monkeypatch):
     llm = get_llm_model()
     assert isinstance(llm, Ollama), "Expected an instance of Ollama class"
 
-def test_ollama_inizialization_model_with_no_model(monkeypatch):
+def test_ollama_initialization_model_with_no_model(monkeypatch):
     MyOllama = Ollama(model_name="ollama")
     def fake_init_chat_model(model, model_provider):
         assert model == "ollama", "Model name should be 'ollama'"
