@@ -33,7 +33,7 @@ jobs:
       # Run tests and collect coverage data
       - name: Run tests and collect coverage
         env: 
-          OPENAI_API_KEY: testkey
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY_TEST }}
         run: |
           coverage run -m pytest
           coverage report
