@@ -7,7 +7,6 @@ on:
   pull_request:
     branches:
       - main
-      - testreport-yihao-sprint14
 
 jobs:
   test:
