@@ -44,4 +44,5 @@ jobs:
         run: |
           coveralls
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERALLS_TOKEN: ${{ secrets.COVERALLS_SUPPLAI_LLM_API_TOKEN }}
