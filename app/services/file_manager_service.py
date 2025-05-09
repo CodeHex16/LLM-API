@@ -124,6 +124,11 @@ class FileManager(ABC):
                     status_code=500,
                     detail=f"Errore nel caricare e processare file",
                 )
+            case _:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file",
+                )
         return False
 
     async def delete_document(
@@ -142,7 +147,7 @@ class FileManager(ABC):
         print("INIZIO RIMOZIONE DOCUMENTO")
         print("file_path:", file_path)
         print("os.path.isfile(file_path):", os.path.isfile(file_path))
-        print("ls -la /data/documents", os.listdir("/data/documents"))
+        print("ls -la " + os.getenv("DOCUMENTS_DIR","/data/documents"), os.listdir(os.getenv("DOCUMENTS_DIR","/data/documents")))
 
         if os.path.isfile(file_path) and os.path.exists(file_path):
             try:
@@ -189,6 +194,11 @@ class FileManager(ABC):
                     detail=f"Documento non trovato",
                 )
             case 500:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Errore nel caricare e processare file",
+                )
+            case _:
                 raise HTTPException(
                     status_code=500,
                     detail=f"Errore nel caricare e processare file",

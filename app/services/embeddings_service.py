@@ -7,7 +7,7 @@ class EmbeddingProvider(ABC):
 	"""Interfaccia per i provider di embedding."""
 
 	@abstractmethod
-	def get_embedding_function(self):
+	def get_embedding_function(self): # pragma: no cover
 		"""Restituisce la funzione di embedding."""
 		pass
 

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, File, UploadFile
+from fastapi import APIRouter, Depends, HTTPException, File, UploadFile, Query
 from app.services.llm_service import LLM, OpenAI
 from typing import List
 import os
@@ -19,7 +19,7 @@ router = APIRouter(
 
 
 @router.post("/upload_file")
-async def upload_file(files: List[UploadFile], token: str):
+async def upload_file(files: List[UploadFile] = File(...), token: str=Query(...)):
     """
     Carica il file nel database vettoriale
 

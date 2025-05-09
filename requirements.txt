@@ -12,8 +12,11 @@ bson
 pytest
 pytest-mock
 pytest-asyncio
+pytest-cov
 httpx
 
-pytest
 pypdf
 python-multipart
+
+coverage
+coveralls
