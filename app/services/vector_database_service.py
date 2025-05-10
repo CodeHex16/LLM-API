@@ -19,11 +19,43 @@ class VectorDatabase(ABC):
     """Interfaccia per la gestione del database vettoriale."""
 
     @abstractmethod
-    def add_documents(self, documents: List[Document]):  # pragma: no cover
+    def __init__(self):
+        self._embedding_provider = get_embedding_provider()
+        self._persist_directory = settings.VECTOR_DB_DIRECTORY
+        self._db = None
+
+    @abstractmethod
+    def _get_db(self):
         pass
 
     @abstractmethod
-    def search_context(self, query: str, results_number: int = 2) -> List[Document]:  # pragma: no cover
+    def __init__(self):
+        self._embedding_provider = get_embedding_provider()
+        self._persist_directory = settings.VECTOR_DB_DIRECTORY
+        self._db = None
+
+    @abstractmethod
+    def _get_db(self):
+        pass
+
+    @abstractmethod
+    def add_documents(self, documents: List[Document]):
+        pass
+
+    @abstractmethod
+    def delete_document(self, document_path: str):
+        pass
+
+    @abstractmethod
+    def search_context(self, query: str, results_number: int = 4) -> List[Document]:
+        pass
+
+    @abstractmethod
+    def delete_all_documents(self):
+        pass
+
+    @abstractmethod
+    def get_all_documents(self):
         pass
 
     # metodi ausiliari
@@ -35,20 +67,13 @@ class VectorDatabase(ABC):
     def count(self) -> int:  # pragma: no cover
         pass
 
-    # @abstractmethod
-    # def ensure_vectorized(self, documents_folder: str):
-    #     """Metodo per caricare e vettorializzare se vuoto."""
-    #     # TODO: capire se lasciare in produzione
-    #     pass
 
-
-# TODO: cistemare con i document loaders specifici
 class ChromaDB(VectorDatabase):
     """Implementazione del database vettoriale ChromaDB."""
 
     def __init__(
         self,
-        persist_directory: str = settings.VECTOR_DB_PERSIST_DIRECTORY,
+        persist_directory: str = settings.VECTOR_DB_DIRECTORY,
     ):
         self.embedding_provider = get_embedding_provider()
         self.persist_directory = persist_directory
@@ -58,7 +83,9 @@ class ChromaDB(VectorDatabase):
     def _get_db(self):
         if self._db is None:
 
-            logger.info(f"ChromaDB: Inizializzazione del database in {self.persist_directory}")
+            logger.info(
+                f"ChromaDB: Inizializzazione del database in {self.persist_directory}"
+            )
             self._db = Chroma(
                 collection_name="supplai_documents",
                 persist_directory=self.persist_directory,
@@ -66,41 +93,20 @@ class ChromaDB(VectorDatabase):
             )
         return self._db
 
-    # TODO: da spostare nel contextManager
-    # def _load_and_split_docs(self, folder_path: str) -> List[Document]:
-
-    # def _is_document_duplicate(self, document: Document) -> bool:
-    #     """Controlla se il documento è duplicato."""
-    #     doc_uuid = uuid.uuid3(
-    #         uuid.NAMESPACE_DNS, document.page_content
-    #     )
-    #     print("doc uuid:", doc_uuid)
-    #     if doc_uuid in self._get_db().get()["ids"]:
-    #         print("Documento duplicato trovato.")
-    #         logger.warning("Documento duplicato trovato.")
-    #         return True 
-    #     pass
-
-    # def _filter_duplicates(self, documents: List[Document]) -> List[Document]:
-    #     """Controlla i documenti duplicati e li rimuove."""
-    #     filtered_documents = []
-    #     for doc in documents:
-    #         if not self._is_document_duplicate(doc):
-    #             filtered_documents.append(doc)
-    #     return filtered_documents
-
     def _generate_document_ids(self, documents: List[Document]) -> List[str]:
         """Estrae gli ID dei documenti."""
-        return [str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents]
+        return [
+            str(uuid.uuid3(uuid.NAMESPACE_DNS, doc.page_content)) for doc in documents
+        ]
 
     def add_documents(self, documents_chunk: List[Document]):
-        print("document_chunks",documents_chunk)
+        print("document_chunks", documents_chunk)
         if not documents_chunk:
             logger.warning("Nessun documento fornito per l'aggiunta.")
             return
         try:
             db = self._get_db()
-            
+
             db.add_documents(
                 documents=documents_chunk,
                 ids=self._generate_document_ids(documents_chunk),
@@ -109,7 +115,7 @@ class ChromaDB(VectorDatabase):
             print(
                 f"ChromaDB: Aggiunti {len(documents_chunk)} documenti al vector store."
             )
-            print("ChromaDB: numero di documenti presenti",self.count())
+            print("ChromaDB: numero di documenti presenti", self.count())
             logger.info(f"Aggiunti {len(documents_chunk)} documenti al vector store.")
 
         except Exception as e:
@@ -126,12 +132,23 @@ class ChromaDB(VectorDatabase):
             print(f"[VECTOR DB] Documento con PATH {document_path} eliminato.")
             logger.info(f"Documento con PATH {document_path} eliminato.")
         except Exception as e:
-            logger.error(f"Errore durante l'eliminazione del documento: {e}", exc_info=True)
+            logger.error(
+                f"Errore durante l'eliminazione del documento: {e}", exc_info=True
+            )
             raise
 
-    def search_context(self, query: str, results_number: int = 2) -> List[Document]:
-        # TODO: Non è detto che serva: Verifica se ci sono documenti
-        # ensure_vectorized()
+    def delete_faq(self, faq_id: str):
+        """Elimina una FAQ dal database."""
+        try:
+            db = self._get_db()
+            db.delete(where={"faq_id": faq_id})
+            print(f"[VECTOR DB] FAQ con ID {faq_id} eliminata.")
+            logger.info(f"FAQ con ID {faq_id} eliminata.")
+        except Exception as e:
+            logger.error(f"Errore durante l'eliminazione della FAQ: {e}", exc_info=True)
+            raise
+
+    def search_context(self, query: str, results_number: int = 4) -> List[Document]:
         try:
             db = self._get_db()
             results = db.similarity_search(query, k=results_number)
@@ -140,18 +157,44 @@ class ChromaDB(VectorDatabase):
             logger.error(f"Errore durante la similarity search: {e}", exc_info=True)
             return []
 
+    def delete_all_documents(self):
+        """Elimina tutti i documenti dal database."""
+        try:
+            db = self._get_db()
+            db.reset_collection()
+            print("[VECTOR DB] Tutti i documenti eliminati.")
+        except Exception as e:
+            logger.error(
+                f"Errore durante l'eliminazione di tutti i documenti: {e}",
+                exc_info=True,
+            )
+            raise
+
+    def get_all_documents(self):
+        """Recupera tutti i documenti dal database."""
+        try:
+            db = self._get_db()
+            results = db.get()
+            return results
+        except Exception as e:
+            logger.error(
+                f"Errore durante il recupero di tutti i documenti: {e}", exc_info=True
+            )
+            return []
+
     # metodi ausiliari
     def _get_collection_count(self) -> int:
         """Helper per gestire accesso a dettagli Chroma."""
         try:
-            client = self._db.get()
-            if client and self._db._collection:
-                return self._db._collection.count()
+            db_instance = self._get_db()
+            if db_instance and db_instance._collection:
+                return db_instance._collection.count()
+            print(
+                "Impossibile ottenere il count: istanza DB o _collection non disponibile dopo _get_db()."
+            )
             return 0
         except Exception as e:
-            logger.warning(
-                f"Impossibile ottenere il count della collection (potrebbe non esistere ancora): {e}"
-            )
+            print(f"Errore durante il recupero del count della collection: {e}")
             return 0
 
     def is_empty(self) -> bool:
@@ -163,30 +206,11 @@ class ChromaDB(VectorDatabase):
     def _delete(self):
         return self._get_db().delete_collection()
 
-    # def ensure_vectorized(self, documents_folder: str):
-    #     """Controlla se il DB è vuoto e, in caso, carica e vettorializza."""
-    #     if self.is_empty():
-    #         logger.info(
-    #             f"Vector store in {self.persist_directory} è vuoto. Avvio vettorizzazione da {documents_folder}..."
-    #         )
-
-    #         # TODO: delegare al context manager
-    #         texts_to_add = self._load_and_split_docs(documents_folder)
-    #         if texts_to_add:
-    #             self.add_documents(texts_to_add)
-    #             logger.info(
-    #                 f"Vettorizzazione completata. {self.count()} documenti nel DB."
-    #             )
-    #         else:
-    #             logger.warning("Nessun documento da vettorializzare trovato.")
-    #     else:
-    #         logger.info(f"Vector store già inizializzato con {self.count()} documenti.")
-
 
 def get_vector_database() -> VectorDatabase:
     match settings.VECTOR_DB_PROVIDER.lower():
         case "chroma":
-            vdb = ChromaDB(persist_directory=settings.VECTOR_DB_PERSIST_DIRECTORY)
+            vdb = ChromaDB(persist_directory=settings.VECTOR_DB_DIRECTORY)
             # vdb.ensure_vectorized(settings.DOCUMENTS_FOLDER)
             return vdb
         case _:

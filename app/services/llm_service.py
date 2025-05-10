@@ -6,11 +6,12 @@ from app.config import settings
 
 logger = logging.getLogger(__name__)
 
+
 # abstract class
 class LLM(ABC):
     def __init__(self, model_name: str):
-        self.model_name = model_name
-        self.model = None
+        self._model_name = model_name
+        self._model = None
         self._check_environment()
         self._initialize_model()
 
@@ -30,7 +31,6 @@ class LLM(ABC):
 
 
 class OpenAI(LLM):
-    # private method
     def _check_environment(self):
         if not os.environ.get("OPENAI_API_KEY"):
             raise ValueError("API key mancante per OpenAI")
@@ -38,12 +38,14 @@ class OpenAI(LLM):
 
     def _initialize_model(self):
         try:
-            self.model = init_chat_model(model=self.model_name, model_provider="openai")
-            if self.model is None:
-                raise ValueError(f"Failed to initialize model {self.model_name}")
+            self._model = init_chat_model(
+                model=self._model_name, model_provider="openai", 
+            )
+            if self._model is None:
+                raise ValueError(f"Failed to initialize model {self._model_name}")
         except Exception as e:
-            logger.error(f"Error initializing model {self.model_name}: {str(e)}")
-            raise ValueError(f"Invalid or unavailable model: {self.model_name}") from e
+            logger.error(f"Error initializing model {self._model_name}: {str(e)}")
+            raise ValueError(f"Invalid or unavailable model: {self._model_name}") from e
 
 
 class Ollama(LLM):
@@ -52,12 +54,15 @@ class Ollama(LLM):
 
     def _initialize_model(self):
         try:
-            self.model = init_chat_model(model=self.model_name, model_provider="ollama")
-            if self.model is None:
-                raise ValueError(f"Failed to initialize model {self.model_name}")
+            self._model = init_chat_model(
+                model=self._model_name, model_provider="ollama"
+            )
+            if self._model is None:
+                raise ValueError(f"Failed to initialize model {self._model_name}")
         except Exception as e:
-            logger.error(f"Error initializing model {self.model_name}: {str(e)}")
-            raise ValueError(f"Invalid or unavailable model: {self.model_name}") from e
+            logger.error(f"Error initializing model {self._model_name}: {str(e)}")
+            raise ValueError(f"Invalid or unavailable model: {self._model_name}") from e
+
 
 def get_llm_model() -> LLM:
     """Factory function per creare un'istanza di LLM"""

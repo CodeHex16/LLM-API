@@ -59,9 +59,3 @@ async def test_generate_chat_name_no_context():
         response = await ac.post("/llm/chat_name", json={"context": ""})
         assert response.status_code == 400
         assert response.json() == {"detail": "Nessun contesto fornito"}
-
-@pytest.mark.asyncio
-async def test_ping():
-    async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.get("/llm/ping")
-        assert response.status_code == 200

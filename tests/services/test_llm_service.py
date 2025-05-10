@@ -7,9 +7,10 @@ def test_openai_initialization(monkeypatch):
     monkeypatch.setattr("app.services.llm_service.settings.LLM_PROVIDER", "openai")
     monkeypatch.setenv("OPENAI_API_KEY", "test_key")
     llm = OpenAI(model_name="gpt-4")
-    assert llm.model_name == "gpt-4", "Model name should be 'gpt-4'"
-    assert llm.model is not None, "Model should be initialized"
+    assert llm._model_name == "gpt-4", "Model name should be 'gpt-4'"
+    assert llm._model is not None, "Model should be initialized"
     assert isinstance(llm, OpenAI), "Expected an instance of OpenAI class"
+
 
 def test_ollama_initialization(monkeypatch):
     pass
@@ -57,6 +58,7 @@ def test_get_llm_model_openai(monkeypatch):
     llm = get_llm_model()
     assert isinstance(llm, OpenAI), "Expected an instance of OpenAI class"
 
+
 def test_get_llm_model_ollama(monkeypatch):
     # Mock the environment variable for Ollama
     monkeypatch.setattr("app.services.llm_service.settings.LLM_PROVIDER", "ollama")
@@ -86,6 +88,8 @@ def test_ollama_inizialization_model_exception(monkeypatch):
 
 def test_get_llm_model_invalid_provider(monkeypatch):
     # Mock the environment variable for an invalid provider
-    monkeypatch.setattr("app.services.llm_service.settings.LLM_PROVIDER", "invalid_provider")
+    monkeypatch.setattr(
+        "app.services.llm_service.settings.LLM_PROVIDER", "invalid_provider"
+    )
     with pytest.raises(ValueError):
         get_llm_model()
