@@ -25,12 +25,11 @@ def test_openai_embedding_provider(monkeypatch):
 def test_openai_embedding_function(monkeypatch):
     embedding_provider = OpenAIEmbeddingProvider()
     embedding_function = embedding_provider.get_embedding_function()
-
+    embedding_function2 = embedding_provider.get_embedding_function()
+    
     assert embedding_function is not None, "Should return a valid embedding function"
-    assert isinstance(
-        embedding_function, OpenAIEmbeddings
-    ), "Should return an instance of OpenAIEmbeddings"
-
+    assert isinstance(embedding_function, OpenAIEmbeddings), "Should return an instance of OpenAIEmbeddings"
+    assert embedding_function == embedding_function2, "Should return the same instance of the embedding function"
 
 def test_openai_embedding_function_no_api_key(monkeypatch):
     embedding_provider = OpenAIEmbeddingProvider(None, "text-embedding-ada-002")

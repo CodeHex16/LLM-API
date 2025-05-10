@@ -29,6 +29,16 @@ class VectorDatabase(ABC):
         pass
 
     @abstractmethod
+    def __init__(self):
+        self._embedding_provider = get_embedding_provider()
+        self._persist_directory = settings.VECTOR_DB_DIRECTORY
+        self._db = None
+
+    @abstractmethod
+    def _get_db(self):
+        pass
+
+    @abstractmethod
     def add_documents(self, documents: List[Document]):
         pass
 
@@ -50,11 +60,11 @@ class VectorDatabase(ABC):
 
     # metodi ausiliari
     @abstractmethod
-    def is_empty(self) -> bool:
+    def is_empty(self) -> bool:  # pragma: no cover
         pass
 
     @abstractmethod
-    def count(self) -> int:
+    def count(self) -> int:  # pragma: no cover
         pass
 
 
