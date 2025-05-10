@@ -35,7 +35,7 @@ async def generate_chat_response(
 
 @router.post("/chat_name")
 async def generate_chat_name(
-    context: schemas.Context
+    context: schemas.Context, llm_response_service: LLMResponseService = Depends(get_llm_response_service)
 ):
     """
     Genera un nome per la chat in base al contesto fornito.
@@ -53,7 +53,6 @@ async def generate_chat_name(
     if not context.context:
         raise HTTPException(status_code=400, detail="Nessun contesto fornito")
 
-    llm_response_service = get_llm_response_service() 
     return llm_response_service.generate_llm_chat_name(
         context.context
     )
