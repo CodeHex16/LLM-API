@@ -42,7 +42,7 @@ def test_llm_response_service_get_context_false(monkeypatch):
     
     # Mock the vector database search_context method
     mock_context = "Paris is the capital of France."
-    monkeypatch.setattr(llm_response_service.vector_database, "search_context", lambda q: None)
+    monkeypatch.setattr(llm_response_service._vector_database, "search_context", lambda q: None)
     
     with pytest.raises(HTTPException) as excinfo:
         llm_response_service._get_context(question)
@@ -54,7 +54,7 @@ def test_llm_response_service_get_context_exception(monkeypatch):
     question = "What is the capital of France?"
     
     mock_search_context = MagicMock(side_effect=Exception("Database error"))
-    monkeypatch.setattr(llm_response_service.vector_database, "search_context", mock_search_context)
+    monkeypatch.setattr(llm_response_service._vector_database, "search_context", mock_search_context)
 
     with pytest.raises(HTTPException) as excinfo:
         llm_response_service._get_context(question)
@@ -72,11 +72,11 @@ def test_generate_llm_chat_name(monkeypatch):
     
 
     llm_response_service = LLMResponseService()
-    llm_response_service.LLM = MagicMock()
-    llm_response_service.LLM.model = MagicMock()
+    llm_response_service._LLM = MagicMock()
+    llm_response_service._LLM.model = MagicMock()
 
     llm_response_service._get_context = lambda question: "mocked context"
-    llm_response_service.LLM.model.invoke = response
+    llm_response_service._LLM.model.invoke = response
 
     llm_response_service.generate_llm_chat_name("mocked question")
     assert response.content == "mocked response content", "Should return the mocked response content"
@@ -90,7 +90,7 @@ def test_generate_llm_chat_name_exception(monkeypatch):
 
     llm_response_service = LLMResponseService()
     llm_response_service._get_context = lambda question: "mocked context"
-    llm_response_service.LLM.model = response
+    llm_response_service._LLM.model = response
 
     with pytest.raises(HTTPException) as excinfo:
         llm_response_service.generate_llm_chat_name("mocked question")
@@ -116,7 +116,7 @@ async def test_generate_llm_response_with_messages_list(monkeypatch):
     service = LLMResponseService()
     monkeypatch.setattr(service, "_get_context", mock_search_context)
     question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
-    monkeypatch.setattr(service, "LLM", mock_LLM)
+    monkeypatch.setattr(service, "_LLM", mock_LLM)
 
     result = service.generate_llm_response(question)
     assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
@@ -144,7 +144,7 @@ async def test_generate_llm_response_with_empty_messages_list(monkeypatch):
     service = LLMResponseService()
     monkeypatch.setattr(service, "_get_context", mock_search_context)
     question = Question(question="Voglio pizza!", messages=[])
-    monkeypatch.setattr(service, "LLM", mock_LLM)
+    monkeypatch.setattr(service, "_LLM", mock_LLM)
 
     result = service.generate_llm_response(question)
     assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
@@ -168,7 +168,7 @@ async def test_generate_llm_response_with_stream_adapter_error(monkeypatch):
     service = LLMResponseService()
     monkeypatch.setattr(service, "_get_context", mock_search_context)
     question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
-    monkeypatch.setattr(service, "LLM", mock_LLM)
+    monkeypatch.setattr(service, "_LLM", mock_LLM)
 
     result = service.generate_llm_response(question)
     assert isinstance(result, StreamingResponse), "Should be a StreamingResponse instance"
@@ -193,7 +193,7 @@ async def test_generate_llm_response_with_stream_error(monkeypatch):
     service = LLMResponseService()
     monkeypatch.setattr(service, "_get_context", mock_search_context)
     question = Question(question="Voglio pizza!", messages=[Message(sender="me", content="Hi")])
-    monkeypatch.setattr(service, "LLM", mock_LLM)
+    monkeypatch.setattr(service, "_LLM", mock_LLM)
 
     with pytest.raises(HTTPException) as excinfo:
         service.generate_llm_response(question)

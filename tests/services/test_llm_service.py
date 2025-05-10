@@ -8,7 +8,7 @@ def test_openai_initialization(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test_key")
     llm = OpenAI(model_name="gpt-4")
     assert llm._model_name == "gpt-4", "Model name should be 'gpt-4'"
-    assert llm.model is not None, "Model should be initialized"
+    assert llm._model is not None, "Model should be initialized"
     assert isinstance(llm, OpenAI), "Expected an instance of OpenAI class"
 
 

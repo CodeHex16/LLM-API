@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, UploadFile
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Depends
 from typing import List
 import os
 
@@ -107,17 +107,22 @@ async def delete_file(fileDelete: schemas.DocumentDelete):
     * **HTTPException.500_INTERNAL_SERVER_ERROR**: Se si verifica un errore durante l'eliminazione del file.
     """
     print("delete file title:", fileDelete)
-    file_manager = get_file_manager_by_extension(fileDelete.title)
-    if file_manager is None:
-        raise HTTPException(status_code=400, detail="File manager not found")
+    try:
+        file_manager = get_file_manager_by_extension(fileDelete.title)
+        if file_manager is None:
+            raise HTTPException(status_code=400, detail="File manager not found")
 
-    file_path = file_manager.get_full_path(fileDelete.title)
-    print("file path:", file_path)
-    await file_manager.delete_document(
-        fileDelete.id, file_path, fileDelete.token, fileDelete.current_password
-    )
+        file_path = file_manager.get_full_path(fileDelete.title)
+        print("file path:", file_path)
+        await file_manager.delete_document(
+            fileDelete.id, file_path, fileDelete.token, fileDelete.current_password
+        )
 
-    return {"message": "File deleted successfully"}
+        return {"message": "File deleted successfully"}
+    except HTTPException as http_exc:
+        raise http_exc
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error in deleting file: {str(e)}")
 
 
 @router.get("")
@@ -131,4 +136,8 @@ def get_documents():
     * **List[str]**: I nomi dei file nella directory /data/documents.
     """
     file_manager = get_file_manager()
-    return file_manager.get_documents_number(), file_manager.get_documents(),os.listdir("/data/documents")
+    return (
+        file_manager.get_documents_number(),
+        file_manager.get_documents(),
+        os.listdir("/data/documents"),
+    )

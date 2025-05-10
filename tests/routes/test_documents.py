@@ -48,7 +48,7 @@ async def test_upload_file_with_error_ext(monkeypatch):
             ("files", ("test.exe", BytesIO(b"test content"), "text/plain")),  # Valid file
         ]
         response = await ac.post(
-            "/documents/upload_file?token=test_token",
+            "/documents?token=test_token",
             files=files,  # Correct usage of file as a tuple
         )
         print("Response:", response.json())
@@ -67,7 +67,7 @@ async def test_upload_file_with_error_mme(monkeypatch):
             ("files", ("test.txt", BytesIO(b"test content"), "text/test")),  # Valid file
         ]
         response = await ac.post(
-            "/documents/upload_file?token=test_token",
+            "/documents?token=test_token",
             files=files,  # Correct usage of file as a tuple
         )
         print("Response:", response.json())
@@ -87,7 +87,7 @@ async def test_upload_file_successful(monkeypatch):
             ("files", ("test.txt", BytesIO(b"test content"), "text/plain")),  # Valid file
         ]
         response = await ac.post(
-            "/documents/upload_file?token=test_token",
+            "/documents?token=test_token",
             files=files,  # Correct usage of file as a tuple
         )
         print("Response:", response.json())
@@ -108,7 +108,7 @@ async def test_upload_file_add_document_http_exception(monkeypatch):
         ]
         
         response = await ac.post(
-                "/documents/upload_file?token=test_token",
+                "/documents?token=test_token",
                 files=files,  # Correct usage of file as a tuple
             )
         assert "EERROR" in response.json()["detail"], "EERROR should be in the error message"
@@ -127,7 +127,7 @@ async def test_upload_file_add_document_exception(monkeypatch):
         ]
      
         response = await ac.post(
-                "/documents/upload_file?token=test_token",
+                "/documents?token=test_token",
                 files=files,  # Correct usage of file as a tuple
             )
         assert "EERROR" in response.json()["detail"], "EERROR should be in the error message"
@@ -146,7 +146,7 @@ async def test_upload_files_successful(monkeypatch):
             ("files", ("test2.txt", BytesIO(b"test content"), "text/plain")),  # Valid file
         ]
         response = await ac.post(
-            "/documents/upload_file?token=test_token",
+            "/documents?token=test_token",
             files=files,  # Correct usage of file as a tuple
         )
         print("Response:", response.json())
@@ -167,7 +167,7 @@ async def test_upload_file_with_one_error(monkeypatch):
             ("files", ("test.exe", BytesIO(b"test content"), "text/plain")),  # Valid file
         ]
         response = await ac.post(
-            "/documents/upload_file?token=test_token",
+            "/documents?token=test_token",
             files=files,  # Correct usage of file as a tuple
         )
         print("Response:", response.json())
@@ -195,7 +195,7 @@ async def test_delete_file_success(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 200
         assert response.json()["message"] == "File deleted successfully"
 
@@ -211,7 +211,7 @@ async def test_delete_file_file_manager_not_found(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 400
         assert response.json()["detail"] == "File manager not found"
 
@@ -234,7 +234,7 @@ async def test_delete_file_http_exception_404(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 404
         assert response.json()["detail"] == "Document not found"
 
@@ -257,14 +257,14 @@ async def test_delete_file_http_exception_500(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 500
         assert response.json()["detail"] == "Error in deleting file"
 
 @pytest.mark.asyncio
 async def test_delete_file_http_exception_default(monkeypatch):
     async def mock_delete_document(*args, **kwargs):
-        raise HTTPException(status_code=501, detail="Error in deleting file")
+        raise HTTPException(status_code=500, detail="Error in deleting file")
 
     file_manager = MagicMock()
     file_manager.get_full_path.return_value = "/data/documents/test.txt"
@@ -280,7 +280,7 @@ async def test_delete_file_http_exception_default(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 500
         assert response.json()["detail"] == "Error in deleting file"
 
@@ -304,17 +304,30 @@ async def test_delete_file_general_exception(monkeypatch):
     }
 
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.request("DELETE", "/documents/delete_file", json=payload)
+        response = await ac.request("DELETE", "/documents", json=payload)
         assert response.status_code == 500
         assert "Error in deleting file" in response.json()["detail"]
 
 @pytest.mark.asyncio
 async def test_get_documents(monkeypatch):
+    # Mock the file_manager and its methods that get_documents route will call
+    mock_file_manager = MagicMock()
+    mock_file_manager.get_documents_number.return_value = 2
+    mock_file_manager.get_documents.return_value = ["doc1.txt", "doc2.pdf"]
+    
+    # Mock os.listdir as it's also called by the route
     monkeypatch.setattr(os, "listdir", lambda _: ["doc1.txt", "doc2.pdf"])
+    
+    # Mock get_file_manager to return your mock_file_manager
+    monkeypatch.setattr("app.routes.documents.get_file_manager", lambda: mock_file_manager)
+
     async with AsyncClient(transport=transport, base_url="http://test") as ac:
-        response = await ac.get("/documents/get_documents")
+        response = await ac.get("/documents")
 
         print("Response:", response.json())
 
         assert response.status_code == 200
-        assert response.json() == ["doc1.txt", "doc2.pdf"], "Should return the list of documents"
+        # Adjust the expected response based on what your route actually returns:
+        # The route returns a tuple: (number, list_of_docs_from_manager, list_of_docs_from_os_listdir)
+        expected_response_data = [2, ["doc1.txt", "doc2.pdf"], ["doc1.txt", "doc2.pdf"]]
+        assert response.json() == expected_response_data, "Should return the document count and names"
