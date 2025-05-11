@@ -5,7 +5,7 @@ from starlette.responses import StreamingResponse
 import logging
 from langchain_core.messages import HumanMessage, SystemMessage
 from app import schemas
-from typing import List
+from typing import List, Union
 
 from app.config import settings
 
@@ -24,37 +24,49 @@ class LLMResponseService:
         self._vector_database = get_vector_database()
         self._CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
 
-    def _get_context(self, question: str) -> str:
+    def _get_context(self, question: str) -> Union[str, list[str]]:
         """
         Get the context for the question from the vector database.
+        Returns a list of page_content strings.
+        Raises HTTPException if no context is found or an error occurs.
         """
         try:
             question_context = self._vector_database.search_context(question)
             if not question_context:
-                return ""
+                logger.warning(f"No context found for question: '{question}'")
+                raise ValueError(f"No context found for question: '{question}'")
+
             output = []
             for doc in question_context:
-                output.append(doc.page_content)
+                if hasattr(doc, 'page_content'):
+                    output.append(doc.page_content)
+                else:
+                    logger.warning(f"Document in context for question '{question}' missing 'page_content': {doc}")
+
+            if not output:
+                logger.warning(f"Context found for question '{question}', but no page_content extracted.")
+                raise ValueError(f"Context found for question '{question}', but no page_content could be extracted.")
+
             return output
-        except Exception as e:
-            print(f"Error getting context: {str(e)}", exc_info=True)
+        except ValueError as ve:
             raise HTTPException(
-                status_code=500, detail=f"Error getting context: {str(e)}"
+                status_code=500, detail=f"Error getting context: {str(ve)}"
+            )
+        except Exception as e:
+            logger.error(f"Unexpected error in _get_context for question '{question}': {str(e)}", exc_info=True)
+            raise HTTPException(
+                status_code=500, detail=f"Unexpected error getting context: {str(e)}"
             )
 
     def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
         context = self._get_context(question.question)
-        # TODO: gestire array messaggi
         formatted_messages = ""
         context_messages = ""
 
         if question.messages:
-            #if isinstance(question.messages, list):
             formatted_messages = "\n".join(
-                    [f"{msg.sender}: {msg.content}" for msg in question.messages]
-                )
-            # else: # limited by pydantic_core._pydantic_core.ValidationError
-            #     formatted_messages = question.messages
+                [f"{msg.sender}: {msg.content}" for msg in question.messages]
+            )            
             context_messages = self._get_context(formatted_messages)
 
         messages = [

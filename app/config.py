@@ -1,4 +1,4 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import SettingsConfigDict, BaseSettings
 import os
 
 
@@ -25,9 +25,7 @@ class Settings(BaseSettings):
         """
     CHUNK_SIZE: int = 400
     CHUNK_OVERLAP: int = 100
-
-    class Config:
-        env_file = ".env"
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()

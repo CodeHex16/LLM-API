@@ -189,6 +189,11 @@ class FileManager(ABC):
         match delete_req.status_code:
             case 204:
                 print(f"Documento eliminato correttamente")
+            case 400:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Documento non trovato",
+                )
             case 404:
                 raise HTTPException(
                     status_code=404,
@@ -204,6 +209,11 @@ class FileManager(ABC):
                     status_code=500,
                     detail=f"Errore nel caricare e processare file {delete_req.text}",
                 )
+            case _:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Errore nel caricare e processare file",
+                )
 
         # rimuovi da filesystem
         if os.path.isfile(file_path) and os.path.exists(file_path):
@@ -214,7 +224,6 @@ class FileManager(ABC):
                     status_code=404,
                     detail=f"File {file_path} non trovato: {e}",
                 )
-            logger.info(f"File {file_path} eliminato")
         else:
             raise HTTPException(
                 status_code=404,
@@ -383,7 +392,6 @@ def get_file_manager(file: UploadFile = None):
     if file is None:
         return TextFileManager()
     match file.content_type:
-        # TODO: capire se catcha anche le stringhe(=faq)
         case "text/plain":
             return TextFileManager()
         case "application/pdf":
