@@ -448,13 +448,17 @@ def test_get_collection_count_with_client_none(monkeypatch, tmp_path):
     temp_persist_dir = tmp_path / "chroma_test_collection_count"
     temp_persist_dir.mkdir()
 
-    vector_db = ChromaDB(persist_directory=str(temp_persist_dir)) # Initialize with temp_persist_dir
-    
+    vector_db = ChromaDB(
+        persist_directory=str(temp_persist_dir)
+    )  # Initialize with temp_persist_dir
+
     fake_db_client = MagicMock()
     # Simulate that the collection is not available or accessible on the client
-    fake_db_client._collection = None 
+    fake_db_client._collection = None
 
-    monkeypatch.setattr(vector_db, "_db", fake_db_client) # vector_db._get_db() will now return fake_db_client
+    monkeypatch.setattr(
+        vector_db, "_db", fake_db_client
+    )  # vector_db._get_db() will now return fake_db_client
 
     count = vector_db._get_collection_count()
     assert count == 0, "Should return 0 when collection is not available via the client"
