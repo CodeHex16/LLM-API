@@ -209,10 +209,10 @@ class FileManager(ABC):
                     status_code=500,
                     detail=f"Errore nel caricare e processare file {delete_req.text}",
                 )
-            case _:  # Add this default case
+            case _:
                 raise HTTPException(
-                    status_code=500,  # As expected by the test for default errors
-                    detail="Errore nel caricare e processare file",  # As expected by the test
+                    status_code=500,
+                    detail="Errore nel caricare e processare file",
                 )
 
         # rimuovi da filesystem
@@ -392,7 +392,6 @@ def get_file_manager(file: UploadFile = None):
     if file is None:
         return TextFileManager()
     match file.content_type:
-        # TODO: capire se catcha anche le stringhe(=faq)
         case "text/plain":
             return TextFileManager()
         case "application/pdf":
