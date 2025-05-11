@@ -8,6 +8,7 @@ from fastapi import Depends
 import os
 import logging
 import uuid
+from chromadb.errors import DuplicateIDError
 
 logger = logging.getLogger(__name__)
 
@@ -107,9 +108,21 @@ class ChromaDB(VectorDatabase):
         try:
             db = self._get_db()
 
+            ids_to_add = self._generate_document_ids(documents_chunk)
+
+            collection = db._collection
+
+            existing_data = collection.get(ids=ids_to_add)
+
+            if existing_data and existing_data["ids"]:
+                colliding_ids = existing_data["ids"]
+                raise DuplicateIDError(
+                    f"Attempted to add documents with an ID that already exists: {', '.join(colliding_ids)}"
+                )
+
             db.add_documents(
                 documents=documents_chunk,
-                ids=self._generate_document_ids(documents_chunk),
+                ids=ids_to_add,
             )
 
             print(
@@ -118,6 +131,10 @@ class ChromaDB(VectorDatabase):
             print("ChromaDB: numero di documenti presenti", self.count())
             logger.info(f"Aggiunti {len(documents_chunk)} documenti al vector store.")
 
+        except DuplicateIDError as e:
+            raise DuplicateIDError(
+                f"ID duplicato trovato durante l'aggiunta di documenti: {e}"
+            )
         except Exception as e:
             logger.error(
                 f"Errore durante l'aggiunta di documenti a Chroma: {e}", exc_info=True
