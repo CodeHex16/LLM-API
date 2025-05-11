@@ -24,7 +24,7 @@ class LLMResponseService:
         self._vector_database = get_vector_database()
         self._CHATBOT_INSTRUCTIONS = settings.CHATBOT_INSTRUCTIONS
 
-    def _get_context(self, question: str) -> Union[str, list[str]]:  # Changed return type hint to list[str] for consistency
+    def _get_context(self, question: str) -> Union[str, list[str]]:
         """
         Get the context for the question from the vector database.
         Returns a list of page_content strings.
@@ -32,7 +32,7 @@ class LLMResponseService:
         """
         try:
             question_context = self._vector_database.search_context(question)
-            if not question_context:  # Handles None or empty list
+            if not question_context:
                 logger.warning(f"No context found for question: '{question}'")
                 raise ValueError(f"No context found for question: '{question}'")
 
@@ -50,7 +50,7 @@ class LLMResponseService:
             return output
         except ValueError as ve:
             raise HTTPException(
-                status_code=500, detail=f"Error getting context: {str(ve)}"  # Or a more specific status code like 404
+                status_code=500, detail=f"Error getting context: {str(ve)}"
             )
         except Exception as e:
             logger.error(f"Unexpected error in _get_context for question '{question}': {str(e)}", exc_info=True)
@@ -64,12 +64,9 @@ class LLMResponseService:
         context_messages = ""
 
         if question.messages:
-            # if isinstance(question.messages, list):
             formatted_messages = "\n".join(
                 [f"{msg.sender}: {msg.content}" for msg in question.messages]
-            )
-            # else: # limited by pydantic_core._pydantic_core.ValidationError
-            #     formatted_messages = question.messages
+            )            
             context_messages = self._get_context(formatted_messages)
 
         messages = [
