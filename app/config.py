@@ -25,7 +25,7 @@ class Settings(BaseSettings):
         """
     CHUNK_SIZE: int = 400
     CHUNK_OVERLAP: int = 100
-    model_config = SettingsConfigDict(env_file=".env")
+    model_config = SettingsConfigDict()
 
 
 settings = Settings()
