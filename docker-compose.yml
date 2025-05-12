@@ -11,8 +11,6 @@ services:
             - ./:/app
             - chroma_db:/data/chroma_db
             - documents:/data/documents
-        env_file:
-            - .env
         networks:
             - suppl-ai-shared-network
         environment:
