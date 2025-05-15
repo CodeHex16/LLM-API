@@ -1,6 +1,13 @@
 from pydantic_settings import SettingsConfigDict, BaseSettings
 import os
 
+if os.environ.get("OPENAI_API_KEY") is None:
+    print("----------------------------------------------------------------------------")
+    print("")
+    print("ERROR: OPENAI_API_KEY environment variable is not set. Please set it before running the application.")
+    print("")
+    print("----------------------------------------------------------------------------")
+    exit(1)
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
