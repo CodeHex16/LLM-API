@@ -139,5 +139,5 @@ def get_documents():
     return (
         file_manager.get_documents_number(),
         file_manager.get_documents(),
-        os.listdir("/data/documents"),
+        os.listdir(os.environ.get("DOCUMENTS_DIR", "/data/documents")),
     )

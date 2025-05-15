@@ -4,6 +4,7 @@ import os
 
 class Settings(BaseSettings):
     OPENAI_API_KEY: str = os.environ.get("OPENAI_API_KEY")
+    DATABASE_URL: str = os.environ.get("DATABASE_URL") or "http://localhost:8000"
     DOCUMENTS_FOLDER: str = "documenti"
     VECTOR_DB_PROVIDER: str = "chroma"
     VECTOR_DB_DIRECTORY: str = "chroma_db"

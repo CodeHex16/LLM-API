@@ -127,7 +127,7 @@ class FileManager(ABC):
             "uploaded_at": datetime.now().isoformat(),
         }
         upload_request_response = requests.post(
-            "http://database-api:8000/documents",
+            (os.getenv('DATABASE_URL') or "http://database-api:8000") + "/documents",
             data=json.dumps(request_body),
             headers={
                 "Content-Type": "application/json",
@@ -171,7 +171,7 @@ class FileManager(ABC):
 
         # rimuovi da Database API
         delete_req = requests.delete(
-            f"http://database-api:8000/documents",
+           (os.getenv('DATABASE_URL') or "http://database-api:8000") + "/documents",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}",
@@ -271,7 +271,7 @@ class StringManager(FileManager):
         print("[StringManager] adding faq:", faq)
 
         ris = requests.post(
-            "http://database-api:8000/faqs",
+            (os.getenv('DATABASE_URL') or "http://database-api:8000") + "/faqs",
             headers={"Authorization": f"Bearer {token}"},
             json=faq.dict(),
         )
@@ -301,7 +301,7 @@ class StringManager(FileManager):
         """
         # rimuovi da Database API
         delete_req = requests.delete(
-            f"http://database-api:8000/faqs/{faq.id}",
+           (os.getenv('DATABASE_URL') or "http://database-api:8000") + f"/faqs/{faq.id}",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}",
@@ -343,7 +343,7 @@ class StringManager(FileManager):
         """
         # rimuovi da Database API
         update_req = requests.patch(
-            f"http://database-api:8000/faqs/{faq.id}",
+            (os.getenv('DATABASE_URL') or "http://database-api:8000") + f"/faqs/{faq.id}",
             headers={
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {token}",
