@@ -18,6 +18,7 @@ services:
             - PYTHONDONTWRITEBYTECODE=1
             - DOCUMENTS_DIR=/data/documents
             - CHROMA_DB_DIR=/data/chroma_db
+            - DATABASE_URL=http://localhost:8000
         command: >
             bash -c "
                 cd app && 
