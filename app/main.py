@@ -4,7 +4,9 @@ import os
 
 if os.environ.get("OPENAI_API_KEY") is None:
     print("WARNING: OPENAI_API_KEY environment variable is not set. Please set it before running the application.")
+    exit(1)
 
+    
 app = FastAPI(
     title="LLM API",
     description="LLM API for the Suppl-AI project",
