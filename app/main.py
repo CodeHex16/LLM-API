@@ -1,5 +1,9 @@
 from fastapi import FastAPI
 from app.routes import llm, documents, faq
+import os
+
+if os.environ.get("OPENAI_API_KEY") is None:
+    print("WARNING: OPENAI_API_KEY environment variable is not set. Please set it before running the application.")
 
 app = FastAPI(
     title="LLM API",
