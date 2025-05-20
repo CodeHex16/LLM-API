@@ -68,8 +68,8 @@ def test_llm_response_service_get_context_false(monkeypatch):
     with pytest.raises(HTTPException) as excinfo:
         llm_response_service._get_context(question)
     assert (
-        excinfo.value.status_code == 500
-    ), "Should raise HTTPException with status code 500"
+        excinfo.value.status_code == 404
+    ), "Should raise HTTPException with status code 404"
     assert str(excinfo.value.detail).startswith(
         "Error getting context:"
     ), "Should raise HTTPException with the correct error message"
