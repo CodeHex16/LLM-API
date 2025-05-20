@@ -50,7 +50,7 @@ class LLMResponseService:
             return output
         except ValueError as ve:
             raise HTTPException(
-                status_code=500, detail=f"Error getting context: {str(ve)}"
+                status_code=404, detail=f"Error getting context: {str(ve)}"
             )
         except Exception as e:
             logger.error(f"Unexpected error in _get_context for question '{question}': {str(e)}", exc_info=True)
@@ -59,26 +59,31 @@ class LLMResponseService:
             )
 
     def generate_llm_response(self, question: schemas.Question) -> StreamingResponse:
-        context = self._get_context(question.question)
+        try:
+            context = self._get_context(question.question)
+        except HTTPException as e:
+            logger.error(f"No context found", exc_info=True)
+            context = ""
+
         formatted_messages = ""
-        context_messages = ""
+        # context_messages = ""
 
         if question.messages:
             formatted_messages = "\n".join(
                 [f"{msg.sender}: {msg.content}" for msg in question.messages]
             )            
-            context_messages = self._get_context(formatted_messages)
+            # context_messages = self._get_context(formatted_messages)
 
         messages = [
             SystemMessage(self._CHATBOT_INSTRUCTIONS),
-            SystemMessage(
-                f"Contesto: {context}\n{context_messages}",
-            ),
             SystemMessage(f"Conversazione precedente: {formatted_messages}"),
+            SystemMessage(
+                f"Contesto: {context}",
+            ),
             HumanMessage(f"Domanda a cui devi rispondere: {question}"),
         ]
         print()
-        print(f"PROMPT: {context} {context_messages}")
+        print(f"PROMPT: {context}")
         print()
         try:
             stream_response = self._LLM._model.astream(messages)
